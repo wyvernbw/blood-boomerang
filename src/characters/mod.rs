@@ -1,10 +1,12 @@
 use std::f32::consts::PI;
 
+use crate::characters::bullet::bullet_plugin;
 use crate::characters::player::player_plugin;
 use crate::screens::prelude::*;
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
+pub mod bullet;
 pub mod player;
 
 pub mod prelude {
@@ -12,16 +14,19 @@ pub mod prelude {
 }
 
 pub fn characters_plugin(app: &mut App) {
-    app.add_plugins(player_plugin).add_systems(
-        Update,
-        (
-            apply_character_velocity,
-            screen_wrap_system,
-            flip_character_sprite,
-            character_bobbing,
-        )
-            .run_if(in_state(GameScreen::Gameplay)),
-    );
+    app.add_event::<ScreenWrapEvent>()
+        .add_plugins(player_plugin)
+        .add_plugins(bullet_plugin)
+        .add_systems(
+            Update,
+            (
+                apply_character_velocity,
+                screen_wrap_system,
+                flip_character_sprite,
+                character_bobbing,
+            )
+                .run_if(in_state(GameScreen::Gameplay)),
+        );
 }
 
 pub fn character_base() -> impl Bundle {
@@ -42,16 +47,16 @@ pub fn character_base() -> impl Bundle {
 #[derive(Component)]
 pub struct Character;
 
-#[derive(Component, Deref, DerefMut, Default)]
+#[derive(Component, Deref, DerefMut, Default, Clone, Copy)]
 pub struct PrevVelocity(Velocity);
 
-#[derive(Component, Deref, DerefMut)]
+#[derive(Component, Deref, DerefMut, Clone, Copy)]
 pub struct Health(i32);
 
-#[derive(Component, Deref, DerefMut)]
+#[derive(Component, Deref, DerefMut, Clone, Copy)]
 pub struct Speed(f32);
 
-#[derive(Component, Deref, DerefMut, Debug)]
+#[derive(Component, Deref, DerefMut, Debug, Clone, Copy)]
 pub struct AimDir(Vec2);
 
 fn apply_character_velocity(
@@ -93,22 +98,40 @@ fn character_bobbing(
 #[derive(Component, Debug, Default)]
 pub struct ScreenWrap;
 
+#[derive(Event)]
+pub struct ScreenWrapEvent {
+    entity: Entity,
+}
+
+impl ScreenWrapEvent {
+    pub fn new(entity: Entity) -> Self {
+        Self { entity }
+    }
+}
+
 const HALF_WIDTH: u32 = RES_WIDTH / 2;
 const HALF_HEIGHT: u32 = RES_HEIGHT / 2;
 
-fn screen_wrap_system(mut query: Query<&mut Transform, With<ScreenWrap>>) {
-    for mut transform in query.iter_mut() {
+fn screen_wrap_system(
+    mut query: Query<(Entity, &mut Transform), With<ScreenWrap>>,
+    mut events: EventWriter<ScreenWrapEvent>,
+) {
+    for (entity, mut transform) in query.iter_mut() {
         if transform.translation.y < -(HALF_HEIGHT as f32) - 8.0 {
             transform.translation.y = HALF_HEIGHT as f32 + 8.0;
+            events.write(ScreenWrapEvent::new(entity));
         }
         if transform.translation.y > HALF_HEIGHT as f32 + 8.0 {
             transform.translation.y = -(HALF_HEIGHT as f32) - 8.0;
+            events.write(ScreenWrapEvent::new(entity));
         }
         if transform.translation.x < -(HALF_WIDTH as f32) - 8.0 {
             transform.translation.x = HALF_WIDTH as f32 + 8.0;
+            events.write(ScreenWrapEvent::new(entity));
         }
         if transform.translation.x > HALF_WIDTH as f32 + 8.0 {
             transform.translation.x = -(HALF_WIDTH as f32) - 8.0;
+            events.write(ScreenWrapEvent::new(entity));
         }
     }
 }

@@ -1,5 +1,8 @@
 use crate::{
-    characters::{self, AimDir, Speed, character_base},
+    characters::{
+        self, AimDir, Speed, character_base,
+        player::shoot::{PlayerShoot, player_shoot_plugin},
+    },
     screens::prelude::*,
 };
 use bevy::{
@@ -11,34 +14,40 @@ use bevy_asset_loader::prelude::*;
 use bevy_rapier2d::prelude::*;
 use leafwing_input_manager::prelude::*;
 
+#[path = "shoot.rs"]
+pub mod shoot;
+
 pub fn player_plugin(app: &mut App) {
-    app.configure_loading_state(
-        LoadingStateConfig::new(GameScreen::Splash).load_collection::<PlayerAssets>(),
-    )
-    .add_systems(OnEnter(GameScreen::Gameplay), spawn_player)
-    .add_plugins(InputManagerPlugin::<PlayerAction>::default())
-    // Defined below, detects whether MKB or gamepad are active
-    .add_plugins(InputModeManagerPlugin)
-    .init_resource::<ActionState<PlayerAction>>()
-    .insert_resource(PlayerAction::default_input_map())
-    // Set up the input processing
-    .add_systems(
-        Update,
-        (
-            control_player,
-            player_mouse_aim
-                .before(player_aim)
-                .run_if(in_state(ActiveInput::MouseKeyboard)),
-            player_aim,
+    app.add_plugins(player_shoot_plugin)
+        .add_systems(OnEnter(GameScreen::Gameplay), spawn_player)
+        .add_plugins(InputManagerPlugin::<PlayerAction>::default())
+        // Defined below, detects whether MKB or gamepad are active
+        .add_plugins(InputModeManagerPlugin)
+        .init_resource::<ActionState<PlayerAction>>()
+        .insert_resource(PlayerAction::default_input_map())
+        // Set up the input processing
+        .add_systems(
+            Update,
+            (
+                control_player,
+                player_mouse_aim
+                    .before(player_aim)
+                    .run_if(in_state(ActiveInput::MouseKeyboard)),
+                player_aim,
+            )
+                .run_if(in_state(GameScreen::Gameplay)),
         )
-            .run_if(in_state(GameScreen::Gameplay)),
-    );
+        .configure_loading_state(
+            LoadingStateConfig::new(GameScreen::Splash).load_collection::<PlayerAssets>(),
+        );
 }
 
 #[derive(Resource, AssetCollection)]
 pub struct PlayerAssets {
     #[asset(path = "player/player.png")]
     sprite: Handle<Image>,
+    #[asset(path = "player/boomerang.png")]
+    boomerang_sprite: Handle<Image>,
 }
 
 #[derive(Component, Default)]
@@ -48,6 +57,10 @@ pub fn spawn_player(mut commands: Commands, player_assets: Res<PlayerAssets>) {
     commands
         .spawn(character_base())
         .insert(Player)
+        .insert(PlayerShoot {
+            rate: 0.025,
+            spread: 5.0_f32.to_radians(),
+        })
         .insert(Speed(96.0))
         .insert(Sprite {
             anchor: bevy::sprite::Anchor::BottomCenter,
@@ -155,8 +168,6 @@ fn control_player(
             .linvel
             .move_towards(Vec2::ZERO, **player_speed * dt * 10.0);
     }
-
-    if action_state.pressed(&PlayerAction::Shoot) {}
 }
 
 fn player_aim(
@@ -164,7 +175,8 @@ fn player_aim(
     mut aim_dir: Single<&mut AimDir, With<Player>>,
 ) {
     if action_state.axis_pair(&PlayerAction::Aim) != Vec2::ZERO {
-        let look = action_state.axis_pair(&PlayerAction::Aim).normalize();
+        let mut look = action_state.axis_pair(&PlayerAction::Aim).normalize();
+        look.y *= -1.0;
         **aim_dir = characters::AimDir(look);
         tracing::info!(aim_dir = ?aim_dir.0);
     }
