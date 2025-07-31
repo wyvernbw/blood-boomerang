@@ -1,9 +1,9 @@
-use std::{f32::consts::PI, ops::Add};
+use std::f32::consts::PI;
 
-use crate::{characters::player::player_plugin, exp_decay::ExpDecay, screens::prelude::*};
+use crate::characters::player::player_plugin;
+use crate::screens::prelude::*;
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
-use color_eyre::owo_colors::OwoColorize;
 
 pub mod player;
 
@@ -16,6 +16,7 @@ pub fn characters_plugin(app: &mut App) {
         Update,
         (
             apply_character_velocity,
+            screen_wrap_system,
             flip_character_sprite,
             character_bobbing,
         )
@@ -27,6 +28,7 @@ pub fn character_base() -> impl Bundle {
     (
         Transform::default(),
         Character,
+        ScreenWrap,
         Health(20),
         AimDir(Vec2::ZERO),
         RigidBody::KinematicVelocityBased,
@@ -85,5 +87,28 @@ fn character_bobbing(
         let speed_factor = velocity.linvel.length_squared() / (speed.0 * speed.0);
         let angle = ((t * 16.0).sin() - 0.5) * PI / 12.0 * speed_factor;
         transform.rotation = Quat::from_axis_angle(Vec3::Z, angle);
+    }
+}
+
+#[derive(Component, Debug, Default)]
+pub struct ScreenWrap;
+
+const HALF_WIDTH: u32 = RES_WIDTH / 2;
+const HALF_HEIGHT: u32 = RES_HEIGHT / 2;
+
+fn screen_wrap_system(mut query: Query<&mut Transform, With<ScreenWrap>>) {
+    for mut transform in query.iter_mut() {
+        if transform.translation.y < -(HALF_HEIGHT as f32) - 8.0 {
+            transform.translation.y = HALF_HEIGHT as f32 + 8.0;
+        }
+        if transform.translation.y > HALF_HEIGHT as f32 + 8.0 {
+            transform.translation.y = -(HALF_HEIGHT as f32) - 8.0;
+        }
+        if transform.translation.x < -(HALF_WIDTH as f32) - 8.0 {
+            transform.translation.x = HALF_WIDTH as f32 + 8.0;
+        }
+        if transform.translation.x > HALF_WIDTH as f32 + 8.0 {
+            transform.translation.x = -(HALF_WIDTH as f32) - 8.0;
+        }
     }
 }

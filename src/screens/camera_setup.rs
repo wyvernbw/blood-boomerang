@@ -4,6 +4,11 @@ use bevy::render::view::RenderLayers;
 use bevy_simple_screen_boxing::CameraBox;
 use bevy_simple_screen_boxing::CameraBoxingPlugin;
 
+pub mod prelude {
+    pub use super::RES_HEIGHT;
+    pub use super::RES_WIDTH;
+}
+
 /// In-game resolution width.
 pub const RES_WIDTH: u32 = 160 * 2;
 

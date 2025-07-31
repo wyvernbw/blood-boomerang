@@ -7,6 +7,7 @@ mod camera_setup;
 
 pub mod prelude {
     pub use super::GameScreen;
+    pub use super::camera_setup::prelude::*;
     pub use super::screens_plugin;
 }
 
