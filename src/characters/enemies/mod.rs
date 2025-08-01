@@ -43,6 +43,7 @@ pub fn enemy_base() -> impl Bundle {
         Sensor,
         CollisionGroups::new(ENEMY_HURTBOX_GROUP, PLAYER_HITBOX_GROUP),
         Hurtbox,
+        LookAtPlayer,
     )
 }
 

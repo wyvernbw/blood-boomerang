@@ -67,6 +67,7 @@ pub fn spawn_player(mut commands: Commands, player_assets: Res<PlayerAssets>) {
             spread: 5.0_f32.to_radians(),
         })
         .insert(Speed(96.0))
+        .insert(Bobbing)
         .insert(Sprite {
             anchor: bevy::sprite::Anchor::BottomCenter,
             image: player_assets.sprite.clone(),

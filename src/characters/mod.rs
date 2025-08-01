@@ -2,7 +2,8 @@ use std::f32::consts::PI;
 
 use crate::characters::bullet::bullet_plugin;
 use crate::characters::enemies::prelude::*;
-use crate::characters::player::player_plugin;
+use crate::characters::player::{Player, player_plugin};
+use crate::exp_decay::ExpDecay;
 use crate::screens::prelude::*;
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
@@ -12,6 +13,8 @@ pub mod enemies;
 pub mod player;
 
 pub mod prelude {
+    pub use super::Bobbing;
+    pub use super::LookAtPlayer;
     pub use super::character_base;
     pub use super::characters_plugin;
     pub use super::{AimDir, Character, Health, Hitbox, Hurtbox, Speed};
@@ -29,6 +32,8 @@ pub fn characters_plugin(app: &mut App) {
             Update,
             (
                 apply_character_velocity,
+                aim_at_player,
+                point_towards_aim_direction.after(aim_at_player),
                 screen_wrap_system,
                 flip_character_sprite,
                 character_bobbing,
@@ -96,8 +101,14 @@ fn flip_character_sprite(mut query: Query<(&mut Sprite, &AimDir), With<Character
     }
 }
 
+#[derive(Component)]
+pub struct Bobbing;
+
 fn character_bobbing(
-    mut query: Query<(&mut Transform, &Velocity, &PrevVelocity, &Speed), With<Character>>,
+    mut query: Query<
+        (&mut Transform, &Velocity, &PrevVelocity, &Speed),
+        (With<Character>, With<Bobbing>),
+    >,
     time: Res<Time>,
 ) {
     let t = time.elapsed_secs();
@@ -158,3 +169,32 @@ pub struct Hurtbox;
 
 #[derive(Component, Debug, Default)]
 pub struct Hitbox;
+
+#[derive(Component, Debug, Default)]
+pub struct LookAtPlayer;
+
+fn aim_at_player(
+    mut query: Query<(&mut AimDir, &Transform), With<LookAtPlayer>>,
+    player: Single<&Transform, With<Player>>,
+) {
+    for (mut aim_dir, transform) in query.iter_mut() {
+        **aim_dir = (player.translation - transform.translation)
+            .normalize()
+            .xy();
+    }
+}
+
+fn point_towards_aim_direction(
+    mut query: Query<(&mut Transform, &AimDir), Without<Bobbing>>,
+    time: Res<Time>,
+) {
+    let dt = time.delta_secs();
+    for (mut transform, aim_dir) in query.iter_mut() {
+        let angle = aim_dir.to_angle() + PI / 2.;
+        // transform.rotation = Quat::from_axis_angle(Vec3::Z, angle);
+        transform.rotation =
+            transform
+                .rotation
+                .exp_decay(Quat::from_axis_angle(Vec3::Z, angle), 8.0, dt);
+    }
+}
