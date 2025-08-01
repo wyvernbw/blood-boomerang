@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use bevy_enoki::prelude::*;
 use bevy_rapier2d::prelude::*;
 use bevy_trauma_shake::prelude::*;
+use bevy_tweening::TweeningPlugin;
 use characters::prelude::*;
 use screens::prelude::*;
 
@@ -16,6 +17,7 @@ pub fn main() {
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(1.0))
         // .add_plugins(RapierDebugRenderPlugin::default())
         .add_plugins(EnokiPlugin)
+        .add_plugins(TweeningPlugin)
         .add_plugins(TraumaPlugin)
         .add_plugins(screens_plugin);
     app.run();

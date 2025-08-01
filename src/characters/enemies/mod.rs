@@ -29,7 +29,7 @@ pub fn enemies_plugin(app: &mut App) {
     app.insert_resource(BoidSeparationUpdateRate::PerFrame)
         .add_plugins(ghost_plugin)
         .configure_loading_state(
-            LoadingStateConfig::new(GameScreen::Splash).load_collection::<EnemyAssets>(),
+            LoadingStateConfig::new(GameScreen::SplashFirst).load_collection::<EnemyAssets>(),
         )
         .add_event::<PlayerHitEvent>()
         .add_event::<EnemyHitEvent>()

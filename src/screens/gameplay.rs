@@ -39,11 +39,11 @@ struct Wave {
 
 const WAVES: &[Wave] = &[
     Wave::builder()
-        .timestamp(Duration::from_secs(1))
+        .timestamp(Duration::from_secs(8))
         .ghost_count(3)
         .build(),
     Wave::builder()
-        .timestamp(Duration::from_secs(5))
+        .timestamp(Duration::from_secs(13))
         .ghost_count(10)
         .build(),
 ];

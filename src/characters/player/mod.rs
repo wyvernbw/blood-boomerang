@@ -44,7 +44,7 @@ pub fn player_plugin(app: &mut App) {
                 .run_if(in_state(GameScreen::Gameplay)),
         )
         .configure_loading_state(
-            LoadingStateConfig::new(GameScreen::Splash).load_collection::<PlayerAssets>(),
+            LoadingStateConfig::new(GameScreen::SplashFirst).load_collection::<PlayerAssets>(),
         );
 }
 

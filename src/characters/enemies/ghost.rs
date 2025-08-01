@@ -14,7 +14,7 @@ pub mod prelude {
 
 pub fn ghost_plugin(app: &mut App) {
     app.configure_loading_state(
-        LoadingStateConfig::new(GameScreen::Splash).load_collection::<GhostAssets>(),
+        LoadingStateConfig::new(GameScreen::SplashFirst).load_collection::<GhostAssets>(),
     );
 }
 
