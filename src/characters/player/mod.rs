@@ -12,6 +12,7 @@ use bevy::{
 use bevy_asset_loader::prelude::*;
 use bevy_rapier2d::prelude::*;
 use leafwing_input_manager::prelude::*;
+use tracing::instrument;
 
 pub mod shoot;
 
@@ -102,6 +103,7 @@ impl PlayerAction {
 
         // Default gamepad input bindings
         input_map.insert_dual_axis(Self::Move, GamepadStick::LEFT);
+        input_map.insert_dual_axis(Self::Move, VirtualDPad::dpad());
         input_map.insert_dual_axis(Self::Aim, GamepadStick::RIGHT);
         input_map.insert(Self::Shoot, GamepadButton::RightTrigger);
 
@@ -165,6 +167,7 @@ fn activate_mkb(
     }
 }
 
+#[instrument(skip_all)]
 fn control_player(
     time: Res<Time>,
     action_state: Res<ActionState<PlayerAction>>,
@@ -176,10 +179,11 @@ fn control_player(
         player_velocity.linvel = player_velocity.linvel.move_towards(
             action_state
                 .clamped_axis_pair(&PlayerAction::Move)
-                .normalize()
+                .clamp_length_max(1.0)
                 * **player_speed,
-            **player_speed * dt * 10.0,
+            **player_speed * dt * 20.0,
         );
+        tracing::info!("{:?}", action_state.axis_pair(&PlayerAction::Move));
     } else {
         player_velocity.linvel = player_velocity
             .linvel
@@ -192,8 +196,7 @@ fn player_aim(
     mut aim_dir: Single<&mut AimDir, With<Player>>,
 ) {
     if action_state.axis_pair(&PlayerAction::Aim) != Vec2::ZERO {
-        let mut look = action_state.axis_pair(&PlayerAction::Aim).normalize();
-        look.y *= -1.0;
+        let look = action_state.axis_pair(&PlayerAction::Aim).normalize();
         **aim_dir = AimDir(look);
     }
 }
@@ -228,7 +231,7 @@ fn player_mouse_aim(
 
             // Flipping y sign here to be consistent with gamepad input.
             // We could also invert the gamepad y-axis
-            action_data.pair = Vec2::new(diff.x, -diff.y);
+            action_data.pair = Vec2::new(diff.x, diff.y);
         }
     }
 }

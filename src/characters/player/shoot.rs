@@ -106,7 +106,7 @@ fn player_shoot_system(
             });
             let direction = Vec2::from_angle(aim_dir.to_angle() + angle);
             commands
-                .spawn(bullet_base(4.0))
+                .spawn(bullet_base(2.0))
                 // .remove::<BulletLifetime>()
                 .insert(BulletMaxWrap(1))
                 .insert(PlayerBoomerang::new(64.))
@@ -185,7 +185,7 @@ fn boomerang_destroy_close_to_player(
             && transform
                 .translation
                 .distance_squared(player_transform.translation)
-                < 64.0
+                < 256.0
         {
             commands.entity(boomerang_id).try_despawn()
         }
