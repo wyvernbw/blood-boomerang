@@ -2,7 +2,7 @@
 
 this project has the sauce.
 
-time left as of writing: 49h.
+time left as of writing: 47h.
 
 ## Todo list
 
@@ -10,7 +10,7 @@ gameplay:
 - [x] player movement
 - [x] player shooting
 - [x] screen wrapping entities
-- [ ] enemy 1
+- [x] enemy 1
 - [x] enemy spawning system
 - [x] killing enemies
 - [ ] basic gameplay loop
