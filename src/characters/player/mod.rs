@@ -178,7 +178,6 @@ fn player_aim(
         let mut look = action_state.axis_pair(&PlayerAction::Aim).normalize();
         look.y *= -1.0;
         **aim_dir = characters::AimDir(look);
-        tracing::info!(aim_dir = ?aim_dir.0);
     }
 }
 
@@ -213,7 +212,6 @@ fn player_mouse_aim(
             // Flipping y sign here to be consistent with gamepad input.
             // We could also invert the gamepad y-axis
             action_data.pair = Vec2::new(diff.x, -diff.y);
-            tracing::info!(?action_data.pair);
         }
     }
 }
