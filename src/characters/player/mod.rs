@@ -13,7 +13,6 @@ use bevy_asset_loader::prelude::*;
 use bevy_rapier2d::prelude::*;
 use leafwing_input_manager::prelude::*;
 
-#[path = "shoot.rs"]
 pub mod shoot;
 
 pub fn player_plugin(app: &mut App) {
@@ -54,6 +53,14 @@ pub struct PlayerAssets {
 #[derive(Component, Default)]
 pub struct Player;
 
+#[derive(Component, Debug)]
+#[require(Hitbox)]
+pub struct PlayerHitbox;
+
+#[derive(Component, Debug)]
+#[require(Hurtbox)]
+pub struct PlayerHurtbox;
+
 pub fn spawn_player(mut commands: Commands, player_assets: Res<PlayerAssets>) {
     commands
         .spawn(character_base())
@@ -64,7 +71,7 @@ pub fn spawn_player(mut commands: Commands, player_assets: Res<PlayerAssets>) {
         .insert(Health(1))
         .insert(ColliderDebugColor(Hsla::hsl(210.0, 1.0, 0.8)))
         .insert(ActiveEvents::COLLISION_EVENTS)
-        .insert(Hurtbox)
+        .insert(PlayerHurtbox)
         .insert(Player)
         .insert(PlayerShoot {
             rate: 0.025,

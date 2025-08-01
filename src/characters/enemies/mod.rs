@@ -23,12 +23,16 @@ pub fn enemies_plugin(app: &mut App) {
     app.insert_resource(BoidSeparationUpdateRate::PerFrame)
         .add_plugins(ghost_plugin)
         .add_event::<PlayerHitEvent>()
+        .add_event::<EnemyHitEvent>()
+        .add_event::<EnemyDiedEvent>()
         .add_systems(
             Update,
             (
                 boids_calculate_separation,
                 boids_move_towards_player.after(boids_calculate_separation),
                 enemy_check_for_player_collisions,
+                enemies_take_damage,
+                handle_enemy_died_events.after(enemies_take_damage),
             )
                 .run_if(in_state(GameScreen::Gameplay)),
         );
@@ -43,7 +47,7 @@ pub struct Enemy;
 pub struct EnemyHitbox;
 
 #[derive(Component, Debug)]
-#[require(Hurtbox)]
+#[require(Hurtbox, CollidingEntities)]
 pub struct EnemyHurtbox;
 
 pub fn enemy_base() -> impl Bundle {
@@ -223,5 +227,40 @@ fn enemy_check_for_player_collisions(
                 hit_events.write(PlayerHitEvent::new(*damage));
             };
         }
+    }
+}
+
+#[derive(Event, Debug)]
+pub struct EnemyHitEvent(Entity);
+
+#[derive(Event, Debug)]
+pub struct EnemyDiedEvent(Entity);
+
+#[instrument(skip_all)]
+fn enemies_take_damage(
+    mut enemies: Query<(Entity, &mut Health, &CollidingEntities), With<EnemyHurtbox>>,
+    hitboxes: Query<&Damage, With<Hitbox>>,
+    mut hit_events: EventWriter<EnemyHitEvent>,
+    mut died_events: EventWriter<EnemyDiedEvent>,
+) {
+    for (enemy, mut health, colliding_entities) in enemies.iter_mut() {
+        for hitbox in colliding_entities.iter() {
+            let Ok(damage) = hitboxes.get(hitbox) else {
+                continue;
+            };
+
+            **health -= **damage;
+            hit_events.write(EnemyHitEvent(enemy));
+            if **health <= 0 {
+                died_events.write(EnemyDiedEvent(enemy));
+            }
+        }
+    }
+}
+
+fn handle_enemy_died_events(mut events: EventReader<EnemyDiedEvent>, mut commands: Commands) {
+    for EnemyDiedEvent(enemy) in events.read() {
+        // TODO: Some effects
+        commands.entity(*enemy).despawn();
     }
 }

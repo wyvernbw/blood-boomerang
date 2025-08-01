@@ -8,8 +8,9 @@ use bevy::{
 use bevy_rapier2d::prelude::*;
 use leafwing_input_manager::prelude::ActionState;
 use rand::Rng;
+use tracing::instrument;
 
-use crate::characters::prelude::*;
+use crate::characters::{player::PlayerHitbox, prelude::*};
 use crate::{
     COLORS,
     characters::{
@@ -29,9 +30,14 @@ pub fn player_shoot_plugin(app: &mut App) {
                 player_shoot_system,
                 spin_boomerangs,
                 boomerang_material_update,
+                boomerang_activate_after_wrap,
             )
                 .run_if(in_state(GameScreen::Gameplay))
                 .after(setup_boomerang_mesh),
+        )
+        .add_systems(
+            PostUpdate,
+            (boomerang_destroy_on_contact,).run_if(in_state(GameScreen::Gameplay)),
         );
 }
 
@@ -86,11 +92,12 @@ fn player_shoot_system(
                 .insert(MeshMaterial2d(material))
                 .insert(Collider::ball(4.0))
                 .insert(Sensor)
+                .insert(CollidingEntities::default())
                 .insert(CollisionGroups::new(
                     PLAYER_HITBOX_GROUP,
                     ENEMY_HURTBOX_GROUP,
                 ))
-                .insert(Hitbox)
+                .insert(PlayerHitbox)
                 .insert(Transform::from_translation(
                     transform.translation + aim_dir.extend(0.0) * 8.0 + vec3(0.0, 8.0, 0.0),
                 ))
@@ -108,6 +115,28 @@ fn spin_boomerangs(mut query: Query<&mut Transform, With<PlayerBoomerang>>, time
     let dt = time.delta_secs();
     for mut transform in query.iter_mut() {
         transform.rotate(Quat::from_axis_angle(Vec3::Z, PI * 2.0 * dt * 8.0))
+    }
+}
+fn boomerang_activate_after_wrap(
+    query: Query<(Entity, &BulletWrapCount), With<PlayerBoomerang>>,
+    mut commands: Commands,
+) {
+    for (boomerang, wrap_count) in query.iter() {
+        if **wrap_count > 0 {
+            commands.entity(boomerang).insert_if_new(Damage(1));
+        }
+    }
+}
+
+#[instrument(skip_all)]
+fn boomerang_destroy_on_contact(
+    mut enemies: Query<(Entity, &CollidingEntities), With<PlayerBoomerang>>,
+    mut commands: Commands,
+) {
+    for (boomerang, colliding_entities) in enemies.iter_mut() {
+        if !colliding_entities.is_empty() {
+            commands.entity(boomerang).despawn();
+        }
     }
 }
 
