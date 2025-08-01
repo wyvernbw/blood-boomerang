@@ -50,12 +50,7 @@ pub(super) fn camera_setup_plugin(app: &mut App) {
         .add_systems(Startup, spawn_camera);
 }
 
-pub(super) fn spawn_camera(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    mut images: ResMut<Assets<Image>>,
-) {
+pub(super) fn spawn_camera(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
     let canvas_size = Extent3d {
         width: RES_WIDTH,
         height: RES_HEIGHT,
