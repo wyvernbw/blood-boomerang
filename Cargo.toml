@@ -34,7 +34,7 @@ bevy_kira_audio = "0.23.0"
 bevy_asset_loader = "0.23.0"
 bevy_tweening = "0.13.0"
 bevy_simple_screen_boxing = "0.1.1"
-bevy_rapier2d = { version = "0.30.0", features = ["enhanced-determinism"] }
+bevy_rapier2d = { version = "0.30.0", features = ["debug-render-2d", "enhanced-determinism"] }
 rand = "0.9.2"
 bon = "3.6.5"
 

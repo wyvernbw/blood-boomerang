@@ -9,10 +9,11 @@ use bevy_rapier2d::prelude::*;
 use leafwing_input_manager::prelude::ActionState;
 use rand::Rng;
 
+use crate::characters::prelude::*;
 use crate::{
     COLORS,
     characters::{
-        AimDir,
+        AimDir, PLAYER_HITBOX_GROUP,
         bullet::{BulletMaxWrap, BulletWrapCount, bullet_base},
         player::{Player, PlayerAction, PlayerAssets},
     },
@@ -85,6 +86,11 @@ fn player_shoot_system(
                 .insert(MeshMaterial2d(material))
                 .insert(Collider::ball(4.0))
                 .insert(Sensor)
+                .insert(CollisionGroups::new(
+                    PLAYER_HITBOX_GROUP,
+                    ENEMY_HURTBOX_GROUP,
+                ))
+                .insert(Hitbox)
                 .insert(Transform::from_translation(
                     transform.translation + aim_dir.extend(0.0) * 8.0 + vec3(0.0, 8.0, 0.0),
                 ))

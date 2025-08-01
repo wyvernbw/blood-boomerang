@@ -12,8 +12,12 @@ pub mod enemies;
 pub mod player;
 
 pub mod prelude {
+    pub use super::character_base;
     pub use super::characters_plugin;
-    pub use super::{AimDir, Character, Health, Speed};
+    pub use super::{AimDir, Character, Health, Hitbox, Hurtbox, Speed};
+    pub use super::{
+        ENEMY_HITBOX_GROUP, ENEMY_HURTBOX_GROUP, PLAYER_HITBOX_GROUP, PLAYER_HURTBOX_GROUP,
+    };
 }
 
 pub fn characters_plugin(app: &mut App) {
@@ -32,6 +36,11 @@ pub fn characters_plugin(app: &mut App) {
                 .run_if(in_state(GameScreen::Gameplay)),
         );
 }
+
+pub const PLAYER_HURTBOX_GROUP: Group = Group::GROUP_1;
+pub const PLAYER_HITBOX_GROUP: Group = Group::GROUP_2;
+pub const ENEMY_HURTBOX_GROUP: Group = Group::GROUP_3;
+pub const ENEMY_HITBOX_GROUP: Group = Group::GROUP_4;
 
 pub fn character_base() -> impl Bundle {
     (
@@ -143,3 +152,9 @@ fn screen_wrap_system(
         }
     }
 }
+
+#[derive(Component, Debug, Default)]
+pub struct Hurtbox;
+
+#[derive(Component, Debug, Default)]
+pub struct Hitbox;

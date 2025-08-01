@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
+use bevy_rapier2d::prelude::*;
 
 use crate::characters::enemies::prelude::*;
 use crate::characters::prelude::*;
@@ -42,6 +43,17 @@ pub fn spawn_ghost<'a>(
         ))
         .insert(Health(15))
         .insert(Speed(64.0))
-        .insert(EnemyClass::Melee);
+        .insert(ColliderDebugColor(Hsla::new(0.0, 0.0, 0.0, 0.0)))
+        .insert(EnemyClass::Melee)
+        .with_children(|parent| {
+            parent.spawn((
+                Hitbox,
+                Transform::default(),
+                Sensor,
+                Collider::ball(8.0),
+                CollisionGroups::new(ENEMY_HITBOX_GROUP, PLAYER_HURTBOX_GROUP),
+                ColliderDebugColor(Hsla::hsl(340., 1.0, 0.8)),
+            ));
+        });
     commands
 }

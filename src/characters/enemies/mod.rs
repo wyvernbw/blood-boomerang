@@ -8,6 +8,7 @@ use crate::characters::Speed;
 use crate::characters::character_base;
 use crate::characters::enemies::ghost::prelude::*;
 use crate::characters::player::Player;
+use crate::characters::prelude::*;
 use crate::screens::GameScreen;
 
 pub mod prelude {
@@ -36,7 +37,13 @@ pub fn enemies_plugin(app: &mut App) {
 pub struct Enemy;
 
 pub fn enemy_base() -> impl Bundle {
-    (character_base(), Enemy, Sensor)
+    (
+        character_base(),
+        Enemy,
+        Sensor,
+        CollisionGroups::new(ENEMY_HURTBOX_GROUP, PLAYER_HITBOX_GROUP),
+        Hurtbox,
+    )
 }
 
 #[derive(Component, Debug, Clone, Copy)]

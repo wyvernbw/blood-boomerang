@@ -1,7 +1,7 @@
 use crate::{
     characters::{
-        self, AimDir, Speed, character_base,
         player::shoot::{PlayerShoot, player_shoot_plugin},
+        prelude::*,
     },
     screens::prelude::*,
 };
@@ -56,6 +56,11 @@ pub struct Player;
 pub fn spawn_player(mut commands: Commands, player_assets: Res<PlayerAssets>) {
     commands
         .spawn(character_base())
+        .insert(CollisionGroups::new(
+            PLAYER_HURTBOX_GROUP,
+            ENEMY_HURTBOX_GROUP | ENEMY_HITBOX_GROUP,
+        ))
+        .insert(Hurtbox)
         .insert(Player)
         .insert(PlayerShoot {
             rate: 0.025,
@@ -177,7 +182,7 @@ fn player_aim(
     if action_state.axis_pair(&PlayerAction::Aim) != Vec2::ZERO {
         let mut look = action_state.axis_pair(&PlayerAction::Aim).normalize();
         look.y *= -1.0;
-        **aim_dir = characters::AimDir(look);
+        **aim_dir = AimDir(look);
     }
 }
 
