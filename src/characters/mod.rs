@@ -13,6 +13,7 @@ pub mod player;
 
 pub mod prelude {
     pub use super::characters_plugin;
+    pub use super::{AimDir, Character, Health, Speed};
 }
 
 pub fn characters_plugin(app: &mut App) {

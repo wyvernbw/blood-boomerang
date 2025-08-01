@@ -36,6 +36,7 @@ bevy_tweening = "0.13.0"
 bevy_simple_screen_boxing = "0.1.1"
 bevy_rapier2d = { version = "0.30.0", features = ["enhanced-determinism"] }
 rand = "0.9.2"
+bon = "3.6.5"
 
 [features]
 # Default to a native dev build.

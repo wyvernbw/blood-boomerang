@@ -3,17 +3,23 @@ use std::sync::Arc;
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
-use crate::{
-    characters::{Speed, character_base, player::Player},
-    screens::GameScreen,
-};
+use crate::characters::Speed;
+use crate::characters::character_base;
+use crate::characters::enemies::ghost::prelude::*;
+use crate::characters::player::Player;
+use crate::screens::GameScreen;
 
 pub mod prelude {
-    pub use super::*;
+    pub use super::enemies_plugin;
+    pub use super::enemy_base;
+    pub use super::{Enemy, EnemyClass};
 }
+
+pub mod ghost;
 
 pub fn enemies_plugin(app: &mut App) {
     app.insert_resource(BoidSeparationUpdateRate::PerFrame)
+        .add_plugins(ghost_plugin)
         .add_systems(
             Update,
             (
