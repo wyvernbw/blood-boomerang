@@ -34,6 +34,7 @@ pub fn enemies_plugin(app: &mut App) {
         .add_event::<PlayerHitEvent>()
         .add_event::<EnemyHitEvent>()
         .add_event::<EnemyDiedEvent>()
+        .add_systems(OnEnter(GameScreen::SplashNext), setup_hit_particle_material)
         .add_systems(
             Update,
             (
@@ -286,15 +287,32 @@ fn handle_enemy_died_events(
 struct EnemyAssets {
     #[asset(path = "enemies/hit.particles.ron")]
     hit_particles: Handle<Particle2dEffect>,
+    #[asset(path = "enemies/hit_particle.png")]
+    hit_particles_texture: Handle<Image>,
 }
 
+#[derive(Resource, Deref, DerefMut)]
+struct HitParticleMaterial(Handle<SpriteParticle2dMaterial>);
+
+fn setup_hit_particle_material(
+    mut commands: Commands,
+    mut materials: ResMut<Assets<SpriteParticle2dMaterial>>,
+    assets: Res<EnemyAssets>,
+) {
+    commands.insert_resource(HitParticleMaterial(materials.add(
+        SpriteParticle2dMaterial::new(assets.hit_particles_texture.clone(), 1, 1),
+    )));
+}
+
+#[instrument(err, skip_all)]
 fn handle_enemy_hit_events(
     mut events: EventReader<EnemyHitEvent>,
     mut commands: Commands,
     assets: Res<EnemyAssets>,
     mut query: Query<&Transform, With<Enemy>>,
     mut shake: Single<&mut Shake>,
-) {
+    hit_particles_material: Res<HitParticleMaterial>,
+) -> Result {
     for EnemyHitEvent(enemy, hitbox_transform) in events.read() {
         let Ok(enemy_transform) = query.get(*enemy) else {
             continue;
@@ -302,7 +320,7 @@ fn handle_enemy_hit_events(
         let from_hitbox = (enemy_transform.translation - hitbox_transform.translation).normalize();
         commands
             .spawn((
-                ParticleSpawner::default(),
+                ParticleSpawner(hit_particles_material.clone()),
                 ParticleEffectHandle(assets.hit_particles.clone()),
                 OneShot::Despawn,
             ))
@@ -312,6 +330,7 @@ fn handle_enemy_hit_events(
             );
         shake.apply_trauma(0.1);
     }
+    Ok(())
 }
 
 pub fn despawn_enemies(mut commands: Commands, query: Query<Entity, With<Enemy>>) {
