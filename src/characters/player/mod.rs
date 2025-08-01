@@ -1,3 +1,4 @@
+use crate::COLORS;
 use crate::characters::enemies::PlayerHitEvent;
 use crate::characters::player::shoot::PlayerShoot;
 use crate::characters::player::shoot::player_shoot_plugin;
@@ -10,6 +11,7 @@ use bevy::{
     window::PrimaryWindow,
 };
 use bevy_asset_loader::prelude::*;
+use bevy_enoki::prelude::*;
 use bevy_rapier2d::prelude::*;
 use leafwing_input_manager::prelude::*;
 use tracing::instrument;
@@ -30,6 +32,10 @@ pub fn player_plugin(app: &mut App) {
         .init_resource::<ActionState<PlayerAction>>()
         .insert_resource(PlayerAction::default_input_map())
         // Set up the input processing
+        .add_systems(
+            OnEnter(GameScreen::SplashNext),
+            update_boomerang_activation_particles_color,
+        )
         .add_systems(
             Update,
             (
@@ -54,6 +60,17 @@ pub struct PlayerAssets {
     sprite: Handle<Image>,
     #[asset(path = "player/boomerang.png")]
     boomerang_sprite: Handle<Image>,
+    #[asset(path = "player/boomerang_activation.particles.ron")]
+    boomerang_activation_particles: Handle<Particle2dEffect>,
+}
+
+fn update_boomerang_activation_particles_color(
+    mut effects: ResMut<Assets<Particle2dEffect>>,
+    assets: Res<PlayerAssets>,
+) {
+    if let Some(effect) = effects.get_mut(assets.boomerang_activation_particles.id()) {
+        effect.color = Some(COLORS[2].into());
+    }
 }
 
 #[derive(Component, Default)]

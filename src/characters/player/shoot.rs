@@ -5,6 +5,7 @@ use bevy::{
     render::render_resource::{AsBindGroup, ShaderRef},
     sprite::{AlphaMode2d, Material2d, Material2dPlugin},
 };
+use bevy_enoki::prelude::*;
 use bevy_rapier2d::prelude::*;
 use leafwing_input_manager::prelude::ActionState;
 use rand::Rng;
@@ -33,6 +34,7 @@ pub fn player_shoot_plugin(app: &mut App) {
             (
                 player_shoot_system,
                 boomerang_activate_after_wrap,
+                boomerang_activate_effects.after(boomerang_fly),
                 boomerang_material_update,
                 boomerang_material_update_no_damage,
             )
@@ -173,6 +175,22 @@ fn boomerang_fly(
                 })
             }
         });
+}
+
+fn boomerang_activate_effects(
+    mut commands: Commands,
+    assets: Res<PlayerAssets>,
+    query: Query<&Transform, (With<PlayerBoomerang>, Added<Damage>)>,
+) {
+    for transform in query.iter() {
+        commands.spawn((
+            ParticleSpawner::default(),
+            ParticleEffectHandle(assets.boomerang_activation_particles.clone()),
+            Transform::from_translation(transform.translation.with_z(10.0)),
+            OneShot::Despawn,
+        ));
+        // TODO: play sounds
+    }
 }
 
 fn boomerang_destroy_close_to_player(
