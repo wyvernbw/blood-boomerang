@@ -1,9 +1,14 @@
+use std::f32::consts::PI;
 use std::sync::Arc;
 
 use bevy::prelude::*;
+use bevy_asset_loader::prelude::*;
+use bevy_enoki::prelude::*;
 use bevy_rapier2d::prelude::*;
+use bevy_trauma_shake::prelude::*;
 use tracing::instrument;
 
+use crate::ShakeExt;
 use crate::characters::Speed;
 use crate::characters::character_base;
 use crate::characters::enemies::ghost::prelude::*;
@@ -22,6 +27,9 @@ pub mod ghost;
 pub fn enemies_plugin(app: &mut App) {
     app.insert_resource(BoidSeparationUpdateRate::PerFrame)
         .add_plugins(ghost_plugin)
+        .configure_loading_state(
+            LoadingStateConfig::new(GameScreen::Splash).load_collection::<EnemyAssets>(),
+        )
         .add_event::<PlayerHitEvent>()
         .add_event::<EnemyHitEvent>()
         .add_event::<EnemyDiedEvent>()
@@ -33,6 +41,9 @@ pub fn enemies_plugin(app: &mut App) {
                 enemy_check_for_player_collisions,
                 enemies_take_damage,
                 handle_enemy_died_events.after(enemies_take_damage),
+                handle_enemy_hit_events
+                    .after(enemies_take_damage)
+                    .before(handle_enemy_died_events),
             )
                 .run_if(in_state(GameScreen::Gameplay)),
         );
@@ -231,7 +242,7 @@ fn enemy_check_for_player_collisions(
 }
 
 #[derive(Event, Debug)]
-pub struct EnemyHitEvent(Entity);
+pub struct EnemyHitEvent(Entity, Transform);
 
 #[derive(Event, Debug)]
 pub struct EnemyDiedEvent(Entity);
@@ -239,18 +250,18 @@ pub struct EnemyDiedEvent(Entity);
 #[instrument(skip_all)]
 fn enemies_take_damage(
     mut enemies: Query<(Entity, &mut Health, &CollidingEntities), With<EnemyHurtbox>>,
-    hitboxes: Query<&Damage, With<Hitbox>>,
+    hitboxes: Query<(&Damage, &Transform), With<Hitbox>>,
     mut hit_events: EventWriter<EnemyHitEvent>,
     mut died_events: EventWriter<EnemyDiedEvent>,
 ) {
     for (enemy, mut health, colliding_entities) in enemies.iter_mut() {
         for hitbox in colliding_entities.iter() {
-            let Ok(damage) = hitboxes.get(hitbox) else {
+            let Ok((damage, transform)) = hitboxes.get(hitbox) else {
                 continue;
             };
 
             **health -= **damage;
-            hit_events.write(EnemyHitEvent(enemy));
+            hit_events.write(EnemyHitEvent(enemy, *transform));
             if **health <= 0 {
                 died_events.write(EnemyDiedEvent(enemy));
             }
@@ -258,9 +269,46 @@ fn enemies_take_damage(
     }
 }
 
-fn handle_enemy_died_events(mut events: EventReader<EnemyDiedEvent>, mut commands: Commands) {
+fn handle_enemy_died_events(
+    mut events: EventReader<EnemyDiedEvent>,
+    mut commands: Commands,
+    mut shake: Single<&mut Shake>,
+) {
     for EnemyDiedEvent(enemy) in events.read() {
         // TODO: Some effects
         commands.entity(*enemy).despawn();
+        shake.apply_trauma(0.25);
+    }
+}
+
+#[derive(Resource, AssetCollection)]
+struct EnemyAssets {
+    #[asset(path = "enemies/hit.particles.ron")]
+    hit_particles: Handle<Particle2dEffect>,
+}
+
+fn handle_enemy_hit_events(
+    mut events: EventReader<EnemyHitEvent>,
+    mut commands: Commands,
+    assets: Res<EnemyAssets>,
+    mut query: Query<&Transform, With<Enemy>>,
+    mut shake: Single<&mut Shake>,
+) {
+    for EnemyHitEvent(enemy, hitbox_transform) in events.read() {
+        let Ok(enemy_transform) = query.get(*enemy) else {
+            continue;
+        };
+        let from_hitbox = (enemy_transform.translation - hitbox_transform.translation).normalize();
+        commands
+            .spawn((
+                ParticleSpawner::default(),
+                ParticleEffectHandle(assets.hit_particles.clone()),
+                OneShot::Despawn,
+            ))
+            .insert(
+                Transform::from_translation(enemy_transform.translation)
+                    .with_rotation(Quat::from_axis_angle(Vec3::Z, from_hitbox.xy().to_angle())),
+            );
+        shake.apply_trauma(0.1);
     }
 }

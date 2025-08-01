@@ -101,7 +101,7 @@ fn player_shoot_system(
             let material = materials.add(PlayerBoomerangMaterial {
                 color_amount: 0.0,
                 color: COLORS[2].into(),
-                disabled_color: COLORS[4].into(),
+                disabled_color: COLORS[4].with_alpha(0.8).into(),
                 base_sampler: player_assets.boomerang_sprite.clone(),
             });
             let direction = Vec2::from_angle(aim_dir.to_angle() + angle);
@@ -122,7 +122,7 @@ fn player_shoot_system(
                 ))
                 .insert(PlayerHitbox)
                 .insert(Transform::from_translation(
-                    transform.translation + aim_dir.extend(0.0) * 8.0 + vec3(0.0, 8.0, 0.0),
+                    transform.translation + aim_dir.extend(0.0) * 8.0 + vec3(0.0, 8.0, 4.0),
                 ))
                 .insert(Velocity {
                     linvel: direction * 200.0,

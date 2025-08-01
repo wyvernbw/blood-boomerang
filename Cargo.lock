@@ -520,24 +520,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bevy_audio"
-version = "0.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74e54154e6369abdbaf5098e20424d59197c9b701d4f79fe8d0d2bde03d25f12"
-dependencies = [
- "bevy_app",
- "bevy_asset",
- "bevy_derive",
- "bevy_ecs",
- "bevy_math",
- "bevy_reflect",
- "bevy_transform",
- "cpal",
- "rodio",
- "tracing",
-]
-
-[[package]]
 name = "bevy_color"
 version = "0.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -693,6 +675,18 @@ checksum = "b8bb31dc1090c6f8fabbf6b21994d19a12766e786885ee48ffc547f0f1fa7863"
 dependencies = [
  "bevy_macro_utils",
  "encase_derive_impl",
+]
+
+[[package]]
+name = "bevy_enoki"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "740289c63cb752adbad3823c49c01d479d853a10d76ccfe5ce3d1f3ea8e14ac2"
+dependencies = [
+ "bevy",
+ "rand 0.8.5",
+ "ron",
+ "serde",
 ]
 
 [[package]]
@@ -857,7 +851,6 @@ dependencies = [
  "bevy_animation",
  "bevy_app",
  "bevy_asset",
- "bevy_audio",
  "bevy_color",
  "bevy_core_pipeline",
  "bevy_derive",
@@ -1369,6 +1362,15 @@ dependencies = [
  "derive_more 1.0.0",
  "serde",
  "thiserror 2.0.12",
+]
+
+[[package]]
+name = "bevy_trauma_shake"
+version = "0.5.0"
+source = "git+https://github.com/piedoom/bevy_trauma_shake.git#989aefe8b7ef47759fbd5aff0e06e601469996ad"
+dependencies = [
+ "bevy",
+ "noisy_bevy",
 ]
 
 [[package]]
@@ -2661,9 +2663,11 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy_asset_loader",
+ "bevy_enoki",
  "bevy_kira_audio",
  "bevy_rapier2d",
  "bevy_simple_screen_boxing",
+ "bevy_trauma_shake",
  "bevy_tweening",
  "bon",
  "color-eyre",
@@ -3081,17 +3085,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "lewton"
-version = "0.10.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "777b48df9aaab155475a83a7df3070395ea1ac6902f5cd062b8f2b028075c030"
-dependencies = [
- "byteorder",
- "ogg",
- "tinyvec",
-]
-
-[[package]]
 name = "libc"
 version = "0.2.172"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3415,6 +3408,15 @@ dependencies = [
  "cfg-if",
  "cfg_aliases",
  "libc",
+]
+
+[[package]]
+name = "noisy_bevy"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da92b36f3af1e81a7eb06474162a789372bdce2574982c7b8d8c301afe72edb6"
+dependencies = [
+ "bevy",
 ]
 
 [[package]]
@@ -3832,15 +3834,6 @@ checksum = "e234d535da3521eb95106f40f0b73483d80bfb3aacf27c40d7e2b72f1a3e00a2"
 dependencies = [
  "log",
  "nonmax",
-]
-
-[[package]]
-name = "ogg"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6951b4e8bf21c8193da321bcce9c9dd2e13c858fe078bf9054a288b419ae5d6e"
-dependencies = [
- "byteorder",
 ]
 
 [[package]]
@@ -4393,16 +4386,6 @@ name = "robust"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4e27ee8bb91ca0adcf0ecb116293afa12d393f9c2b9b9cd54d33e8078fe19839"
-
-[[package]]
-name = "rodio"
-version = "0.20.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e7ceb6607dd738c99bc8cb28eff249b7cd5c8ec88b9db96c0608c1480d140fb1"
-dependencies = [
- "cpal",
- "lewton",
-]
 
 [[package]]
 name = "ron"

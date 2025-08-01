@@ -1,5 +1,7 @@
 use bevy::prelude::*;
+use bevy_enoki::prelude::*;
 use bevy_rapier2d::prelude::*;
+use bevy_trauma_shake::prelude::*;
 use characters::prelude::*;
 use screens::prelude::*;
 
@@ -13,6 +15,8 @@ pub fn main() {
         .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(1.0))
         // .add_plugins(RapierDebugRenderPlugin::default())
+        .add_plugins(EnokiPlugin)
+        .add_plugins(TraumaPlugin)
         .add_plugins(screens_plugin)
         .add_plugins(characters_plugin);
     app.run();
@@ -26,3 +30,15 @@ pub const COLORS: &[Color] = &[
     Color::srgb(0.271, 0.141, 0.349),
     Color::srgb(0.149, 0.051, 0.204),
 ];
+
+trait ShakeExt {
+    fn apply_trauma(&mut self, value: f32);
+}
+
+impl ShakeExt for Shake {
+    fn apply_trauma(&mut self, value: f32) {
+        if self.trauma() < value {
+            self.set_trauma(value);
+        }
+    }
+}

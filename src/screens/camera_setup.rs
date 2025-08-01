@@ -9,6 +9,7 @@ use bevy::render::render_resource::TextureUsages;
 use bevy::render::view::RenderLayers;
 use bevy_simple_screen_boxing::CameraBox;
 use bevy_simple_screen_boxing::CameraBoxingPlugin;
+use bevy_trauma_shake::prelude::*;
 
 use crate::COLORS;
 
@@ -92,6 +93,7 @@ pub(super) fn spawn_camera(mut commands: Commands, mut images: ResMut<Assets<Ima
             target: RenderTarget::Image(image_handle.clone().into()),
             ..default()
         },
+        Shake::default(),
         Msaa::Off,
         InGameCamera,
         PIXEL_PERFECT_LAYERS,
