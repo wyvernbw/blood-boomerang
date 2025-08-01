@@ -11,7 +11,7 @@ gameplay:
 - [x] player shooting
 - [x] screen wrapping entities
 - [ ] enemy 1
-- [ ] enemy spawning system
+- [x] enemy spawning system
 - [ ] killing enemies
 - [ ] basic gameplay loop
 
