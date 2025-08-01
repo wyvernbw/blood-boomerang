@@ -41,6 +41,7 @@ pub fn spawn_ghost<'a>(
             Ghost,
         ))
         .insert(Health(15))
+        .insert(Speed(64.0))
         .insert(EnemyClass::Melee);
     commands
 }

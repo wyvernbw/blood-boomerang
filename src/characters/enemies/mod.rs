@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
+use tracing::instrument;
 
 use crate::characters::Speed;
 use crate::characters::character_base;
@@ -35,7 +36,7 @@ pub fn enemies_plugin(app: &mut App) {
 pub struct Enemy;
 
 pub fn enemy_base() -> impl Bundle {
-    (character_base(), Enemy)
+    (character_base(), Enemy, Sensor)
 }
 
 #[derive(Component, Debug, Clone, Copy)]
@@ -48,34 +49,40 @@ pub struct Boid {
 impl Boid {
     fn calculate_separation<'a>(
         &self,
-        transform: &GlobalTransform,
-        transforms: impl Iterator<Item = &'a GlobalTransform>,
+        transform: &Transform,
+        transforms: impl Iterator<Item = &'a Transform>,
     ) -> Vec2 {
         let flock_detection_range_squared = self.flock_detection_range * self.flock_detection_range;
         let (count, separation) = transforms
             .filter_map(|other_transform| {
                 if other_transform
-                    .translation()
-                    .distance_squared(transform.translation())
+                    .translation
+                    .distance_squared(transform.translation)
                     < flock_detection_range_squared
                 {
                     // close, avoid
-                    Some(-(transform.translation() - other_transform.translation()).normalize())
+                    Some((transform.translation - other_transform.translation).normalize())
                 } else {
                     None
                 }
             })
+            .filter(|vec| !vec.is_nan())
             .fold((0.0f32, Vec2::ZERO), |(count, acc), vec| {
                 (count + 1.0, acc + vec.xy())
             });
+        if count == 0.0 {
+            return Vec2::ZERO;
+        }
         separation / count
     }
+    #[instrument(skip_all)]
     fn update_separation<'a>(
         &mut self,
-        transform: &GlobalTransform,
-        transforms: impl Iterator<Item = &'a GlobalTransform>,
+        transform: &Transform,
+        transforms: impl Iterator<Item = &'a Transform>,
     ) {
         let separation = self.calculate_separation(transform, transforms);
+        tracing::trace!(?separation);
         self.current_separation = separation;
     }
 }
@@ -83,8 +90,8 @@ impl Boid {
 impl Default for Boid {
     fn default() -> Self {
         Self {
-            separation_speed: 32.,
-            flock_detection_range: 8.,
+            separation_speed: 64.,
+            flock_detection_range: 20.,
             current_separation: default(),
         }
     }
@@ -108,7 +115,7 @@ pub enum EnemyClass {
 }
 
 fn boids_calculate_separation(
-    mut query: Query<(&GlobalTransform, &EnemyClass, &mut Boid), With<Enemy>>,
+    mut query: Query<(&Transform, &EnemyClass, &mut Boid), With<Enemy>>,
     time: Res<Time>,
     mut tick_time: Local<f32>,
     update_rate: Res<BoidSeparationUpdateRate>,
@@ -137,29 +144,17 @@ fn boids_calculate_separation(
 }
 
 fn boids_move_towards_player(
-    mut query: Query<
-        (
-            &mut Velocity,
-            &GlobalTransform,
-            &EnemyClass,
-            &mut Boid,
-            &Speed,
-        ),
-        With<Enemy>,
-    >,
-    player_transform: Single<&GlobalTransform, With<Player>>,
+    mut query: Query<(&mut Velocity, &Transform, &EnemyClass, &mut Boid, &Speed), With<Enemy>>,
+    player_transform: Single<&Transform, With<Player>>,
     time: Res<Time>,
 ) {
     let dt = time.delta_secs();
     for (mut velocity, transform, enemy_class, boid, speed) in query.iter_mut() {
         // apply separation
         velocity.linvel += dt * boid.current_separation * boid.separation_speed;
-        let distance_to_player = player_transform
-            .translation()
-            .distance(transform.translation());
+        let distance_to_player = player_transform.translation.distance(transform.translation);
         let mut move_towards_player = || {
-            let dir_to_player =
-                (player_transform.translation() - transform.translation()).normalize();
+            let dir_to_player = (player_transform.translation - transform.translation).normalize();
             velocity.linvel = velocity
                 .linvel
                 .move_towards(dir_to_player.xy() * speed.0, dt * speed.0 * 2.0);
