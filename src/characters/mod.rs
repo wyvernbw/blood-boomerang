@@ -119,18 +119,22 @@ fn screen_wrap_system(
     for (entity, mut transform) in query.iter_mut() {
         if transform.translation.y < -(HALF_HEIGHT as f32) - 8.0 {
             transform.translation.y = HALF_HEIGHT as f32 + 8.0;
+            transform.translation.x *= -1.0;
             events.write(ScreenWrapEvent::new(entity));
         }
         if transform.translation.y > HALF_HEIGHT as f32 + 8.0 {
             transform.translation.y = -(HALF_HEIGHT as f32) - 8.0;
+            transform.translation.x *= -1.0;
             events.write(ScreenWrapEvent::new(entity));
         }
         if transform.translation.x < -(HALF_WIDTH as f32) - 8.0 {
             transform.translation.x = HALF_WIDTH as f32 + 8.0;
+            transform.translation.y *= -1.0;
             events.write(ScreenWrapEvent::new(entity));
         }
         if transform.translation.x > HALF_WIDTH as f32 + 8.0 {
             transform.translation.x = -(HALF_WIDTH as f32) - 8.0;
+            transform.translation.y *= -1.0;
             events.write(ScreenWrapEvent::new(entity));
         }
     }
