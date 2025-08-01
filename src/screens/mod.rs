@@ -21,7 +21,7 @@ pub fn screens_plugin(app: &mut App) {
         );
 }
 
-#[derive(States, Clone, Debug, Default, Eq, PartialEq, Hash)]
+#[derive(States, Clone, Copy, Debug, Default, Eq, PartialEq, Hash)]
 pub enum GameScreen {
     #[default]
     Splash,

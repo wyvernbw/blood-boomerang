@@ -23,23 +23,26 @@ pub mod prelude {
     };
 }
 
-pub fn characters_plugin(app: &mut App) {
-    app.add_event::<ScreenWrapEvent>()
-        .add_plugins(player_plugin)
-        .add_plugins(bullet_plugin)
-        .add_plugins(enemies_plugin)
-        .add_systems(
-            Update,
-            (
-                apply_character_velocity,
-                aim_at_player,
-                point_towards_aim_direction.after(aim_at_player),
-                screen_wrap_system,
-                flip_character_sprite,
-                character_bobbing,
-            )
-                .run_if(in_state(GameScreen::Gameplay)),
-        );
+#[bon::builder]
+pub fn characters_plugin(screen: GameScreen) -> impl Plugin {
+    move |app: &mut App| {
+        app.add_event::<ScreenWrapEvent>()
+            .add_plugins(player_plugin)
+            .add_plugins(bullet_plugin)
+            .add_plugins(enemies_plugin)
+            .add_systems(
+                Update,
+                (
+                    apply_character_velocity,
+                    aim_at_player,
+                    point_towards_aim_direction.after(aim_at_player),
+                    screen_wrap_system,
+                    flip_character_sprite,
+                    character_bobbing,
+                )
+                    .run_if(in_state(screen)),
+            );
+    }
 }
 
 pub const PLAYER_HURTBOX_GROUP: Group = Group::GROUP_1;

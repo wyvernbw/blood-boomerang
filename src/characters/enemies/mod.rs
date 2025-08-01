@@ -17,6 +17,7 @@ use crate::characters::prelude::*;
 use crate::screens::GameScreen;
 
 pub mod prelude {
+    pub use super::despawn_enemies;
     pub use super::enemies_plugin;
     pub use super::enemy_base;
     pub use super::{Enemy, EnemyClass, EnemyHitbox, EnemyHurtbox};
@@ -310,5 +311,11 @@ fn handle_enemy_hit_events(
                     .with_rotation(Quat::from_axis_angle(Vec3::Z, from_hitbox.xy().to_angle())),
             );
         shake.apply_trauma(0.1);
+    }
+}
+
+pub fn despawn_enemies(mut commands: Commands, query: Query<Entity, With<Enemy>>) {
+    for enemy in query.iter() {
+        commands.entity(enemy).try_despawn();
     }
 }

@@ -16,9 +16,14 @@ use tracing::instrument;
 
 pub mod shoot;
 
+pub mod prelude {
+    pub use super::despawn_player;
+    pub use super::player_plugin;
+    pub use super::spawn_player;
+}
+
 pub fn player_plugin(app: &mut App) {
     app.add_plugins(player_shoot_plugin)
-        .add_systems(OnEnter(GameScreen::Gameplay), spawn_player)
         .add_plugins(InputManagerPlugin::<PlayerAction>::default())
         // Defined below, detects whether MKB or gamepad are active
         .add_plugins(InputModeManagerPlugin)
@@ -85,6 +90,10 @@ pub fn spawn_player(mut commands: Commands, player_assets: Res<PlayerAssets>) {
             image: player_assets.sprite.clone(),
             ..default()
         });
+}
+
+pub fn despawn_player(mut commands: Commands, player: Single<Entity, With<Player>>) {
+    commands.entity(*player).try_despawn();
 }
 
 #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]

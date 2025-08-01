@@ -6,11 +6,19 @@ use rand::Rng;
 
 use crate::characters::enemies::ghost::prelude::*;
 use crate::characters::enemies::prelude::*;
+use crate::characters::player::prelude::*;
+use crate::characters::prelude::*;
 use crate::screens::prelude::*;
 
 pub fn gameplay_plugin(app: &mut App) {
     app.init_resource::<CurrentWave>()
         .add_event::<SpawnWaveEvent>()
+        .add_plugins(characters_plugin().screen(GameScreen::Gameplay).call())
+        .add_systems(OnEnter(GameScreen::Gameplay), spawn_player)
+        .add_systems(
+            OnExit(GameScreen::Gameplay),
+            (despawn_player, despawn_enemies),
+        )
         .add_systems(
             Update,
             (spawn_waves, spawn_wave_event_loop.after(spawn_waves))
@@ -92,7 +100,7 @@ fn spawn_waves(
 #[derive(Event, Debug, Deref, DerefMut, Clone)]
 struct SpawnWaveEvent(usize);
 
-fn spawn_wave_event_loop<'a>(
+fn spawn_wave_event_loop(
     mut commands: Commands,
     mut events: EventReader<SpawnWaveEvent>,
     ghost_assets: Res<GhostAssets>,

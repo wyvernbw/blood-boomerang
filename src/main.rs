@@ -17,8 +17,7 @@ pub fn main() {
         // .add_plugins(RapierDebugRenderPlugin::default())
         .add_plugins(EnokiPlugin)
         .add_plugins(TraumaPlugin)
-        .add_plugins(screens_plugin)
-        .add_plugins(characters_plugin);
+        .add_plugins(screens_plugin);
     app.run();
 }
 
