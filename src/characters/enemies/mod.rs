@@ -213,7 +213,7 @@ fn enemy_check_for_player_collisions(
     player: Single<Entity, With<Player>>,
 ) {
     for event in events.read() {
-        tracing::info!(?event);
+        tracing::trace!(?event);
         if let CollisionEvent::Started(entity_1, entity_2, _) = *event {
             let (_, enemy_id) = if entity_1 == *player {
                 (entity_1, entity_2)

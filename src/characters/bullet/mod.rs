@@ -15,6 +15,10 @@ pub fn bullet_plugin(app: &mut App) {
             bullets_despawn_from_wraps,
         )
             .run_if(in_state(GameScreen::Gameplay)),
+    )
+    .add_systems(
+        PostUpdate,
+        (bullet_lifetime_tick, bullets_despawn_from_wraps).run_if(in_state(GameScreen::Gameplay)),
     );
 }
 
@@ -63,7 +67,7 @@ fn bullet_lifetime_tick(
     for (bullet, mut lifetime) in query.iter_mut() {
         **lifetime -= dt;
         if **lifetime < 0.0 {
-            commands.entity(bullet).despawn();
+            commands.entity(bullet).try_despawn();
         }
     }
 }
@@ -85,7 +89,7 @@ fn bullets_despawn_from_wraps(
 ) {
     for (entity, wrap_count, max_wrap) in query.iter() {
         if **wrap_count > **max_wrap {
-            commands.entity(entity).despawn();
+            commands.entity(entity).try_despawn();
         }
     }
 }

@@ -41,7 +41,7 @@ pub fn spawn_ghost<'a>(
             },
             Ghost,
         ))
-        .insert(Health(15))
+        .insert(Health(2))
         .insert(Speed(64.0))
         .insert(ColliderDebugColor(Hsla::new(0.0, 0.0, 0.0, 0.0)))
         .insert(EnemyClass::Melee)

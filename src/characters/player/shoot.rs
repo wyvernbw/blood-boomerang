@@ -10,7 +10,7 @@ use leafwing_input_manager::prelude::ActionState;
 use rand::Rng;
 use tracing::instrument;
 
-use crate::characters::{player::PlayerHitbox, prelude::*};
+use crate::characters::{bullet::BulletLifetime, player::PlayerHitbox, prelude::*};
 use crate::{
     COLORS,
     characters::{
@@ -25,19 +25,28 @@ pub fn player_shoot_plugin(app: &mut App) {
     app.add_plugins(Material2dPlugin::<PlayerBoomerangMaterial>::default())
         .add_systems(Startup, setup_boomerang_mesh)
         .add_systems(
+            FixedUpdate,
+            (spin_boomerangs, boomerang_fly).run_if(in_state(GameScreen::Gameplay)),
+        )
+        .add_systems(
             Update,
             (
                 player_shoot_system,
-                spin_boomerangs,
-                boomerang_material_update,
                 boomerang_activate_after_wrap,
+                boomerang_material_update,
+                boomerang_material_update_no_damage,
             )
+                .chain()
                 .run_if(in_state(GameScreen::Gameplay))
                 .after(setup_boomerang_mesh),
         )
         .add_systems(
             PostUpdate,
-            (boomerang_destroy_on_contact,).run_if(in_state(GameScreen::Gameplay)),
+            (
+                boomerang_destroy_on_contact,
+                boomerang_destroy_close_to_player,
+            )
+                .run_if(in_state(GameScreen::Gameplay)),
         );
 }
 
@@ -47,8 +56,20 @@ pub struct PlayerShoot {
     pub spread: f32,
 }
 
-#[derive(Component, Debug, Clone, Copy)]
-pub struct PlayerBoomerang;
+#[derive(Component, Debug, Clone, Copy, Default)]
+pub struct PlayerBoomerang {
+    traveled: f32,
+    max_distance: f32,
+}
+
+impl PlayerBoomerang {
+    fn new(max_distance: f32) -> Self {
+        Self {
+            max_distance,
+            ..default()
+        }
+    }
+}
 
 #[derive(Resource, Deref, DerefMut)]
 pub struct BoomerangMesh(Handle<Mesh>);
@@ -83,10 +104,12 @@ fn player_shoot_system(
                 disabled_color: COLORS[4].into(),
                 base_sampler: player_assets.boomerang_sprite.clone(),
             });
+            let direction = Vec2::from_angle(aim_dir.to_angle() + angle);
             commands
                 .spawn(bullet_base(4.0))
+                // .remove::<BulletLifetime>()
                 .insert(BulletMaxWrap(1))
-                .insert(PlayerBoomerang)
+                .insert(PlayerBoomerang::new(64.))
                 .insert(Mesh2d(mesh_handle))
                 .insert(BoomerangMaterialId(material.id()))
                 .insert(MeshMaterial2d(material))
@@ -102,7 +125,7 @@ fn player_shoot_system(
                     transform.translation + aim_dir.extend(0.0) * 8.0 + vec3(0.0, 8.0, 0.0),
                 ))
                 .insert(Velocity {
-                    linvel: Vec2::from_angle(aim_dir.to_angle() + angle) * 200.0,
+                    linvel: direction * 200.0,
                     ..default()
                 });
         }
@@ -117,6 +140,7 @@ fn spin_boomerangs(mut query: Query<&mut Transform, With<PlayerBoomerang>>, time
         transform.rotate(Quat::from_axis_angle(Vec3::Z, PI * 2.0 * dt * 8.0))
     }
 }
+
 fn boomerang_activate_after_wrap(
     query: Query<(Entity, &BulletWrapCount), With<PlayerBoomerang>>,
     mut commands: Commands,
@@ -128,14 +152,54 @@ fn boomerang_activate_after_wrap(
     }
 }
 
+fn boomerang_fly(
+    time: Res<Time>,
+    commands: ParallelCommands,
+    mut query: Query<(Entity, &mut PlayerBoomerang, &mut Velocity, &Transform)>,
+    player_transform: Single<&Transform, With<Player>>,
+) {
+    let dt = time.delta_secs();
+    query
+        .par_iter_mut()
+        .for_each(|(boomerang_id, mut boomerang, mut velocity, transform)| {
+            let speed = velocity.linvel.length();
+            boomerang.traveled += speed * dt;
+            if boomerang.traveled > boomerang.max_distance {
+                // go towards player
+                let to_player = (player_transform.translation - transform.translation).normalize();
+                velocity.linvel = to_player.xy() * speed;
+                commands.command_scope(|mut commands| {
+                    commands.entity(boomerang_id).insert_if_new(Damage(1));
+                })
+            }
+        });
+}
+
+fn boomerang_destroy_close_to_player(
+    mut commands: Commands,
+    mut query: Query<(Entity, &mut PlayerBoomerang, &Transform)>,
+    player_transform: Single<&Transform, With<Player>>,
+) {
+    for (boomerang_id, boomerang, transform) in query.iter_mut() {
+        if boomerang.traveled > boomerang.max_distance
+            && transform
+                .translation
+                .distance_squared(player_transform.translation)
+                < 64.0
+        {
+            commands.entity(boomerang_id).try_despawn()
+        }
+    }
+}
+
 #[instrument(skip_all)]
 fn boomerang_destroy_on_contact(
-    mut enemies: Query<(Entity, &CollidingEntities), With<PlayerBoomerang>>,
+    mut enemies: Query<(Entity, &CollidingEntities), (With<PlayerBoomerang>, With<Damage>)>,
     mut commands: Commands,
 ) {
     for (boomerang, colliding_entities) in enemies.iter_mut() {
         if !colliding_entities.is_empty() {
-            commands.entity(boomerang).despawn();
+            commands.entity(boomerang).try_despawn();
         }
     }
 }
@@ -167,14 +231,25 @@ pub struct BoomerangMaterialId(AssetId<PlayerBoomerangMaterial>);
 
 fn boomerang_material_update(
     mut materials: ResMut<Assets<PlayerBoomerangMaterial>>,
-    mut query: Query<(&BoomerangMaterialId, &BulletWrapCount), With<PlayerBoomerang>>,
+    mut query: Query<(&BoomerangMaterialId, &Damage), With<PlayerBoomerang>>,
 ) {
-    for (material, count) in query.iter_mut() {
-        if **count < 1 {
+    for (material, damage) in query.iter_mut() {
+        if **damage < 1 {
             continue;
         }
         if let Some(material) = materials.get_mut(**material) {
             material.color_amount = 1.0;
+        }
+    }
+}
+
+fn boomerang_material_update_no_damage(
+    mut materials: ResMut<Assets<PlayerBoomerangMaterial>>,
+    mut query: Query<&BoomerangMaterialId, (With<PlayerBoomerang>, Without<Damage>)>,
+) {
+    for material in query.iter_mut() {
+        if let Some(material) = materials.get_mut(**material) {
+            material.color_amount = 0.0;
         }
     }
 }

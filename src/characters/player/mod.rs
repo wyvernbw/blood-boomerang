@@ -252,6 +252,6 @@ fn player_die_if_out_of_health(
     if **player_health <= 0 {
         // TODO: run an animation?
         next_screen.set(GameScreen::AfterDeath);
-        commands.entity(player_id).despawn();
+        commands.entity(player_id).try_despawn();
     }
 }
