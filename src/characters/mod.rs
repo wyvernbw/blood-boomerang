@@ -1,12 +1,14 @@
 use std::f32::consts::PI;
 
 use crate::characters::bullet::bullet_plugin;
+use crate::characters::enemies::prelude::*;
 use crate::characters::player::player_plugin;
 use crate::screens::prelude::*;
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
 pub mod bullet;
+pub mod enemies;
 pub mod player;
 
 pub mod prelude {
@@ -17,6 +19,7 @@ pub fn characters_plugin(app: &mut App) {
     app.add_event::<ScreenWrapEvent>()
         .add_plugins(player_plugin)
         .add_plugins(bullet_plugin)
+        .add_plugins(enemies_plugin)
         .add_systems(
             Update,
             (
