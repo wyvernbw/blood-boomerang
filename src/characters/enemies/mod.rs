@@ -14,7 +14,7 @@ use crate::screens::GameScreen;
 pub mod prelude {
     pub use super::enemies_plugin;
     pub use super::enemy_base;
-    pub use super::{Enemy, EnemyClass};
+    pub use super::{Enemy, EnemyClass, EnemyHitbox, EnemyHurtbox};
 }
 
 pub mod ghost;
@@ -22,11 +22,13 @@ pub mod ghost;
 pub fn enemies_plugin(app: &mut App) {
     app.insert_resource(BoidSeparationUpdateRate::PerFrame)
         .add_plugins(ghost_plugin)
+        .add_event::<PlayerHitEvent>()
         .add_systems(
             Update,
             (
                 boids_calculate_separation,
                 boids_move_towards_player.after(boids_calculate_separation),
+                enemy_check_for_player_collisions,
             )
                 .run_if(in_state(GameScreen::Gameplay)),
         );
@@ -36,13 +38,22 @@ pub fn enemies_plugin(app: &mut App) {
 #[require(Boid, EnemyClass)]
 pub struct Enemy;
 
+#[derive(Component, Debug)]
+#[require(Hitbox)]
+pub struct EnemyHitbox;
+
+#[derive(Component, Debug)]
+#[require(Hurtbox)]
+pub struct EnemyHurtbox;
+
 pub fn enemy_base() -> impl Bundle {
     (
         character_base(),
         Enemy,
         Sensor,
         CollisionGroups::new(ENEMY_HURTBOX_GROUP, PLAYER_HITBOX_GROUP),
-        Hurtbox,
+        ActiveEvents::COLLISION_EVENTS,
+        EnemyHurtbox,
         LookAtPlayer,
     )
 }
@@ -175,6 +186,42 @@ fn boids_move_towards_player(
                 move_towards_player();
             }
             EnemyClass::Ranged { .. } => {}
+        }
+    }
+}
+
+#[derive(Event, Clone, Copy)]
+pub struct PlayerHitEvent {
+    pub damage: Damage,
+}
+
+impl PlayerHitEvent {
+    pub fn new(damage: Damage) -> Self {
+        Self { damage }
+    }
+}
+
+#[instrument(skip_all)]
+fn enemy_check_for_player_collisions(
+    mut events: EventReader<CollisionEvent>,
+    mut hit_events: EventWriter<PlayerHitEvent>,
+    hitboxes: Query<&Damage, With<EnemyHitbox>>,
+    player: Single<Entity, With<Player>>,
+) {
+    for event in events.read() {
+        tracing::info!(?event);
+        if let CollisionEvent::Started(entity_1, entity_2, _) = *event {
+            let (_, enemy_id) = if entity_1 == *player {
+                (entity_1, entity_2)
+            } else if entity_2 == *player {
+                (entity_2, entity_1)
+            } else {
+                continue;
+            };
+
+            if let Ok(damage) = hitboxes.get(enemy_id) {
+                hit_events.write(PlayerHitEvent::new(*damage));
+            };
         }
     }
 }

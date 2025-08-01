@@ -17,7 +17,7 @@ pub mod prelude {
     pub use super::LookAtPlayer;
     pub use super::character_base;
     pub use super::characters_plugin;
-    pub use super::{AimDir, Character, Health, Hitbox, Hurtbox, Speed};
+    pub use super::{AimDir, Character, Damage, Health, Hitbox, Hurtbox, Speed};
     pub use super::{
         ENEMY_HITBOX_GROUP, ENEMY_HURTBOX_GROUP, PLAYER_HITBOX_GROUP, PLAYER_HURTBOX_GROUP,
     };
@@ -57,6 +57,7 @@ pub fn character_base() -> impl Bundle {
         RigidBody::KinematicVelocityBased,
         Collider::ball(8.0),
         KinematicCharacterController::default(),
+        ActiveCollisionTypes::all(),
         Velocity::default(),
         PrevVelocity::default(),
     )
@@ -70,6 +71,9 @@ pub struct PrevVelocity(Velocity);
 
 #[derive(Component, Deref, DerefMut, Clone, Copy)]
 pub struct Health(i32);
+
+#[derive(Component, Deref, DerefMut, Clone, Copy)]
+pub struct Damage(i32);
 
 #[derive(Component, Deref, DerefMut, Clone, Copy)]
 pub struct Speed(f32);

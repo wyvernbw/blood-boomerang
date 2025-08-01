@@ -47,11 +47,13 @@ pub fn spawn_ghost<'a>(
         .insert(EnemyClass::Melee)
         .with_children(|parent| {
             parent.spawn((
-                Hitbox,
+                EnemyHitbox,
                 Transform::default(),
                 Sensor,
                 Collider::ball(8.0),
+                Damage(1),
                 CollisionGroups::new(ENEMY_HITBOX_GROUP, PLAYER_HURTBOX_GROUP),
+                ActiveEvents::COLLISION_EVENTS,
                 ColliderDebugColor(Hsla::hsl(340., 1.0, 0.8)),
             ));
         });

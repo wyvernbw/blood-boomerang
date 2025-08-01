@@ -26,4 +26,5 @@ pub enum GameScreen {
     #[default]
     Splash,
     Gameplay,
+    AfterDeath,
 }

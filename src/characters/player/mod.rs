@@ -1,10 +1,9 @@
-use crate::{
-    characters::{
-        player::shoot::{PlayerShoot, player_shoot_plugin},
-        prelude::*,
-    },
-    screens::prelude::*,
-};
+use crate::characters::enemies::PlayerHitEvent;
+use crate::characters::player::shoot::PlayerShoot;
+use crate::characters::player::shoot::player_shoot_plugin;
+use crate::characters::prelude::*;
+use crate::screens::prelude::*;
+
 use bevy::{
     input::{gamepad::GamepadEvent, keyboard::KeyboardInput},
     prelude::*,
@@ -34,6 +33,8 @@ pub fn player_plugin(app: &mut App) {
                     .before(player_aim)
                     .run_if(in_state(ActiveInput::MouseKeyboard)),
                 player_aim,
+                player_handle_hit_events,
+                player_die_if_out_of_health.after(player_handle_hit_events),
             )
                 .run_if(in_state(GameScreen::Gameplay)),
         )
@@ -58,8 +59,11 @@ pub fn spawn_player(mut commands: Commands, player_assets: Res<PlayerAssets>) {
         .spawn(character_base())
         .insert(CollisionGroups::new(
             PLAYER_HURTBOX_GROUP,
-            ENEMY_HURTBOX_GROUP | ENEMY_HITBOX_GROUP,
+            ENEMY_HITBOX_GROUP,
         ))
+        .insert(Health(1))
+        .insert(ColliderDebugColor(Hsla::hsl(210.0, 1.0, 0.8)))
+        .insert(ActiveEvents::COLLISION_EVENTS)
         .insert(Hurtbox)
         .insert(Player)
         .insert(PlayerShoot {
@@ -219,5 +223,28 @@ fn player_mouse_aim(
             // We could also invert the gamepad y-axis
             action_data.pair = Vec2::new(diff.x, -diff.y);
         }
+    }
+}
+
+fn player_handle_hit_events(
+    mut health: Single<&mut Health, With<Player>>,
+    mut event_reader: EventReader<PlayerHitEvent>,
+) {
+    for PlayerHitEvent { damage } in event_reader.read() {
+        // triple the dereference power!!!
+        ***health -= **damage;
+    }
+}
+
+fn player_die_if_out_of_health(
+    mut commands: Commands,
+    player: Single<(Entity, &Health), With<Player>>,
+    mut next_screen: ResMut<NextState<GameScreen>>,
+) {
+    let (player_id, player_health) = *player;
+    if **player_health <= 0 {
+        // TODO: run an animation?
+        next_screen.set(GameScreen::AfterDeath);
+        commands.entity(player_id).despawn();
     }
 }
