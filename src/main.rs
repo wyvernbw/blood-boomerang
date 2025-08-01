@@ -17,3 +17,12 @@ pub fn main() {
         .add_plugins(characters_plugin);
     app.run();
 }
+
+pub const COLORS: &[Color] = &[
+    Color::srgb(1.000, 1.000, 1.000),
+    Color::srgb(0.996, 0.424, 0.565),
+    Color::srgb(0.816, 0.216, 0.569),
+    Color::srgb(0.529, 0.157, 0.416),
+    Color::srgb(0.271, 0.141, 0.349),
+    Color::srgb(0.149, 0.051, 0.204),
+];

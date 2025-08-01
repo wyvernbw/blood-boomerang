@@ -182,7 +182,7 @@ fn player_aim(
 }
 
 fn player_mouse_aim(
-    camera_query: Query<(&GlobalTransform, &Camera)>,
+    camera_query: Query<(&GlobalTransform, &Camera), With<OuterCamera>>,
     player_query: Query<&Transform, With<Player>>,
     window_query: Query<&Window, With<PrimaryWindow>>,
     mut action_state: ResMut<ActionState<PlayerAction>>,

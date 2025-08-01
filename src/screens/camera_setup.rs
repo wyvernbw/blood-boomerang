@@ -1,10 +1,20 @@
 use bevy::prelude::*;
+use bevy::render::camera::RenderTarget;
 use bevy::render::camera::ScalingMode as CameraScalingMode;
+use bevy::render::render_resource::Extent3d;
+use bevy::render::render_resource::TextureDescriptor;
+use bevy::render::render_resource::TextureDimension;
+use bevy::render::render_resource::TextureFormat;
+use bevy::render::render_resource::TextureUsages;
 use bevy::render::view::RenderLayers;
 use bevy_simple_screen_boxing::CameraBox;
 use bevy_simple_screen_boxing::CameraBoxingPlugin;
 
+use crate::COLORS;
+
 pub mod prelude {
+    pub use super::InGameCamera;
+    pub use super::OuterCamera;
     pub use super::RES_HEIGHT;
     pub use super::RES_WIDTH;
 }
@@ -25,15 +35,15 @@ const HIGH_RES_LAYERS: RenderLayers = RenderLayers::layer(1);
 /// Low-resolution texture that contains the pixel-perfect world.
 /// Canvas itself is rendered to the high-resolution world.
 #[derive(Component)]
-struct Canvas;
+pub struct Canvas;
 
 /// Camera that renders the pixel-perfect world to the [`Canvas`].
 #[derive(Component)]
-struct InGameCamera;
+pub struct InGameCamera;
 
 /// Camera that renders the [`Canvas`] (and other graphics on [`HIGH_RES_LAYERS`]) to the screen.
 #[derive(Component)]
-struct OuterCamera;
+pub struct OuterCamera;
 
 pub(super) fn camera_setup_plugin(app: &mut App) {
     app.add_plugins(CameraBoxingPlugin)
@@ -44,7 +54,36 @@ pub(super) fn spawn_camera(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    mut images: ResMut<Assets<Image>>,
 ) {
+    let canvas_size = Extent3d {
+        width: RES_WIDTH,
+        height: RES_HEIGHT,
+        ..default()
+    };
+
+    // This Image serves as a canvas representing the low-resolution game screen
+    let mut canvas = Image {
+        texture_descriptor: TextureDescriptor {
+            label: None,
+            size: canvas_size,
+            dimension: TextureDimension::D2,
+            format: TextureFormat::Bgra8UnormSrgb,
+            mip_level_count: 1,
+            sample_count: 1,
+            usage: TextureUsages::TEXTURE_BINDING
+                | TextureUsages::COPY_DST
+                | TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[],
+        },
+        ..default()
+    };
+
+    // Fill image.data with zeroes
+    canvas.resize(canvas_size);
+
+    let image_handle = images.add(canvas);
+
     let mut projection = OrthographicProjection::default_2d();
     projection.scaling_mode = CameraScalingMode::Fixed {
         width: RES_WIDTH as f32,
@@ -53,24 +92,31 @@ pub(super) fn spawn_camera(
     commands.spawn((
         Camera2d,
         Camera {
-            clear_color: ClearColorConfig::Custom(Color::linear_rgb(0.5, 0.5, 0.9)),
+            order: -1,
+            clear_color: ClearColorConfig::Custom(*COLORS.last().unwrap()),
+            target: RenderTarget::Image(image_handle.clone().into()),
             ..default()
         },
+        Msaa::Off,
+        InGameCamera,
+        PIXEL_PERFECT_LAYERS,
+    ));
+
+    commands.spawn((
+        Sprite::from_image(image_handle.clone()),
+        Canvas,
+        HIGH_RES_LAYERS,
+    ));
+
+    commands.spawn((
+        Camera2d,
         CameraBox::ResolutionIntegerScale {
             resolution: Vec2::new(RES_WIDTH as f32, RES_HEIGHT as f32),
             allow_imperfect_aspect_ratios: false,
         },
         Projection::Orthographic(projection),
-    ));
-
-    // background
-    commands.spawn((
-        Mesh2d(meshes.add(Rectangle::from_size(vec2(
-            RES_WIDTH as f32,
-            RES_HEIGHT as f32,
-        )))),
-        MeshMaterial2d(materials.add(Color::srgba(0.75, 0.5, 0.5, 1.0))),
-        Transform::default(),
-        PIXEL_PERFECT_LAYERS,
+        Msaa::Off,
+        OuterCamera,
+        HIGH_RES_LAYERS,
     ));
 }

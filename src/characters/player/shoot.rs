@@ -10,6 +10,7 @@ use leafwing_input_manager::prelude::ActionState;
 use rand::Rng;
 
 use crate::{
+    COLORS,
     characters::{
         AimDir,
         bullet::{BulletMaxWrap, BulletWrapCount, bullet_base},
@@ -71,8 +72,8 @@ fn player_shoot_system(
             let angle = rand::rng().random_range(-half_spread..half_spread);
             let material = materials.add(PlayerBoomerangMaterial {
                 color_amount: 0.0,
-                color: LinearRgba::rgb(0.0, 0.6, 0.6),
-                disabled_color: LinearRgba::rgb(0.1, 0.1, 0.1),
+                color: COLORS[2].into(),
+                disabled_color: COLORS[4].into(),
                 base_sampler: player_assets.boomerang_sprite.clone(),
             });
             commands
