@@ -1,6 +1,6 @@
+use crate::audio::prelude::*;
 use bevy::prelude::*;
 use bevy_enoki::prelude::*;
-use bevy_kira_audio::prelude::*;
 use bevy_lunex::prelude::*;
 use bevy_rapier2d::prelude::*;
 use bevy_trauma_shake::prelude::*;
@@ -8,6 +8,7 @@ use bevy_tweening::TweeningPlugin;
 use characters::prelude::*;
 use screens::prelude::*;
 
+mod audio;
 mod autotimer;
 mod characters;
 mod exp_decay;
@@ -23,7 +24,7 @@ pub fn main() {
         .add_plugins(TweeningPlugin)
         .add_plugins(TraumaPlugin)
         .add_plugins(UiLunexPlugins)
-        .add_plugins(AudioPlugin)
+        .add_plugins(my_audio_plugin)
         .add_plugins(screens_plugin);
     app.run();
 }

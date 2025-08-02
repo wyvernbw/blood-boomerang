@@ -1,10 +1,10 @@
 use std::f32::consts::PI;
 use std::sync::Arc;
 
+use crate::audio::prelude::*;
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
 use bevy_enoki::prelude::*;
-use bevy_kira_audio::prelude::*;
 use bevy_rapier2d::prelude::*;
 use bevy_trauma_shake::prelude::*;
 use bon::Builder;
@@ -353,6 +353,7 @@ fn handle_enemy_hit_events(
     mut commands: Commands,
     assets: Res<EnemyAssets>,
     audio: Res<Audio>,
+    volume: Res<VolumeSettings>,
     mut hit_sound_idx: Local<usize>,
     mut query: Query<&Transform, With<Enemy>>,
     mut shake: Single<&mut Shake>,
@@ -374,7 +375,9 @@ fn handle_enemy_hit_events(
                     .with_rotation(Quat::from_axis_angle(Vec3::Z, from_hitbox.xy().to_angle())),
             );
         shake.apply_trauma(0.1);
-        audio.play(assets.hit_sounds[*hit_sound_idx].clone());
+        audio
+            .play(assets.hit_sounds[*hit_sound_idx].clone())
+            .with_volume(volume.calc_sfx(1.0));
         *hit_sound_idx = (*hit_sound_idx + 1) % assets.hit_sounds.len();
     }
     Ok(())

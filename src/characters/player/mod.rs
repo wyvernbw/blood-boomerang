@@ -10,6 +10,7 @@ use crate::characters::player::shoot::player_shoot_plugin;
 use crate::characters::prelude::*;
 use crate::screens::prelude::*;
 
+use crate::audio::prelude::*;
 use bevy::ecs::system::ScheduleSystem;
 use bevy::tasks::TaskPool;
 use bevy::{
@@ -58,6 +59,7 @@ pub fn player_plugin(app: &mut App) {
                 player_died_effects
                     .after(player_die_if_out_of_health)
                     .after(on_player_died),
+                player_step_sounds,
             )
                 .run_if(in_state(GameScreen::Gameplay)),
         )
@@ -74,6 +76,15 @@ pub struct PlayerAssets {
     boomerang_sprite: Handle<Image>,
     #[asset(path = "player/boomerang_activation.particles.ron")]
     boomerang_activation_particles: Handle<Particle2dEffect>,
+    #[asset(
+        paths(
+            "player/sounds/step_1.wav",
+            "player/sounds/step_2.wav",
+            "player/sounds/step_3.wav",
+        ),
+        collection(typed)
+    )]
+    step_sounds: Vec<Handle<AudioSource>>,
 }
 
 fn update_boomerang_activation_particles_color(
@@ -329,5 +340,23 @@ fn player_died_effects(
     anim_timer.tick(time.delta());
     if anim_timer.just_finished() {
         next_screen.set(GameScreen::AfterDeath);
+    }
+}
+
+fn player_step_sounds(
+    _: Single<(), (With<Player>, With<Moving>)>,
+    audio: Res<Audio>,
+    volume: Res<VolumeSettings>,
+    assets: Res<PlayerAssets>,
+    mut step_timer: Local<AutoTimer<250, TimerRepeating>>,
+    time: Res<Time>,
+    mut step_idx: Local<usize>,
+) {
+    step_timer.tick(time.delta());
+    if step_timer.just_finished() {
+        audio
+            .play(assets.step_sounds[*step_idx].clone())
+            .with_volume(volume.calc_sfx(0.3));
+        *step_idx = (*step_idx + 1) % assets.step_sounds.len();
     }
 }
