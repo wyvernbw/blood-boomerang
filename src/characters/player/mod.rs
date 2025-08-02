@@ -10,6 +10,7 @@ use crate::characters::player::shoot::player_shoot_plugin;
 use crate::characters::prelude::*;
 use crate::screens::prelude::*;
 
+use bevy::ecs::system::ScheduleSystem;
 use bevy::tasks::TaskPool;
 use bevy::{
     input::{gamepad::GamepadEvent, keyboard::KeyboardInput},
@@ -53,7 +54,10 @@ pub fn player_plugin(app: &mut App) {
                 player_aim,
                 player_handle_hit_events,
                 player_die_if_out_of_health.after(player_handle_hit_events),
-                player_died_effects.after(player_die_if_out_of_health),
+                on_player_died,
+                player_died_effects
+                    .after(player_die_if_out_of_health)
+                    .after(on_player_died),
             )
                 .run_if(in_state(GameScreen::Gameplay)),
         )
@@ -306,14 +310,22 @@ fn player_die_if_out_of_health(
     }
 }
 
+#[derive(Debug, Resource, Default, Component, Deref, DerefMut)]
+pub struct PlayerDeathEffectsTimer(AutoTimer<800, TimerOnce>);
+
+fn on_player_died(mut commands: Commands, player: Single<Entity, (With<Player>, Added<Dead>)>) {
+    commands
+        .entity(*player)
+        .insert(PlayerDeathEffectsTimer::default());
+}
+
 fn player_died_effects(
     mut commands: Commands,
     time: Res<Time>,
-    mut anim_timer: Local<AutoTimer<800, TimerOnce>>,
-    player: Single<Entity, (With<Player>, With<Dead>)>,
+    player: Single<(Entity, &mut PlayerDeathEffectsTimer), (With<Player>, With<Dead>)>,
     mut next_screen: ResMut<NextState<GameScreen>>,
 ) {
-    let player_id = *player;
+    let (player_id, mut anim_timer) = player.into_inner();
     anim_timer.tick(time.delta());
     if anim_timer.just_finished() {
         next_screen.set(GameScreen::AfterDeath);

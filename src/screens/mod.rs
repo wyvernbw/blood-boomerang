@@ -1,3 +1,4 @@
+use bevy::dev_tools::states::log_transitions;
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
 
@@ -24,7 +25,8 @@ pub fn screens_plugin(app: &mut App) {
         .add_plugins(camera_setup_plugin)
         .add_plugins(gameplay_plugin)
         .add_plugins(splash_screen_plugin)
-        .add_plugins(after_death_plugin);
+        .add_plugins(after_death_plugin)
+        .add_systems(Update, log_transitions::<GameScreen>);
 }
 
 #[derive(States, Clone, Copy, Debug, Default, Eq, PartialEq, Hash)]

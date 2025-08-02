@@ -6,7 +6,9 @@ pub mod prelude {
     pub use super::{AutoTimer, TimerOnce, TimerRepeating};
 }
 
+#[derive(Debug, Default, Clone, Copy, Hash)]
 pub struct TimerOnce;
+#[derive(Debug, Default, Clone, Copy, Hash)]
 pub struct TimerRepeating;
 
 #[derive(Resource, Component, Debug, Clone)]

@@ -21,7 +21,10 @@ pub fn after_death_plugin(app: &mut App) {
         );
 }
 
+type TextDelayTimer = AutoTimer<500, TimerOnce>;
+
 #[derive(Component)]
+#[require(TextDelayTimer)]
 struct BlackScreen;
 
 const MARGIN: Val = Val::Px(4.0);
@@ -50,15 +53,15 @@ fn spawn_black_screen(mut commands: Commands) {
 fn spawn_black_screen_ui(
     mut commands: Commands,
     time: Res<Time>,
-    black_screen: Single<Entity, With<BlackScreen>>,
-    mut text_delay: Local<AutoTimer<500, TimerOnce>>,
+    black_screen: Single<(Entity, &mut TextDelayTimer), With<BlackScreen>>,
 ) {
+    let (black_screen, mut text_delay) = black_screen.into_inner();
     text_delay.tick(time.delta());
     if !text_delay.just_finished() {
         return;
     }
     tracing::info!("spawning ui");
-    commands.entity(*black_screen).insert(children![
+    commands.entity(black_screen).insert(children![
         (Text::new("DIED"), TextColor(COLORS[3])),
         (Text::new("Press ENTER to restart."), TextColor(COLORS[4]))
     ]);

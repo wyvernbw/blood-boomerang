@@ -306,7 +306,7 @@ fn handle_enemy_died_events(
 ) {
     for EnemyDiedEvent(enemy) in events.read() {
         // TODO: Some effects
-        commands.entity(*enemy).despawn();
+        commands.entity(*enemy).try_despawn();
         shake.apply_trauma(0.25);
     }
 }

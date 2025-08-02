@@ -35,6 +35,7 @@ pub fn characters_plugin(screen: GameScreen) -> impl Plugin {
             .add_systems(
                 FixedUpdate,
                 (
+                    stop_if_dead.before(apply_friction),
                     apply_friction.before(apply_character_velocity),
                     apply_character_velocity,
                     apply_knockback,
@@ -234,7 +235,7 @@ fn apply_knockback(
     mut query: Query<(Entity, &Knockback, &KnockbackStrength, &mut Velocity)>,
 ) {
     for (entity, knockback, knockback_strength, mut velocity) in query.iter_mut() {
-        velocity.linvel += knockback.normalize_or_zero() * knockback_strength.0;
+        velocity.linvel = knockback.normalize_or_zero() * knockback_strength.0;
         commands
             .entity(entity)
             .try_remove::<Knockback>()
@@ -247,3 +248,9 @@ pub struct Dead;
 
 #[derive(Component, Default, Clone, Copy)]
 pub struct Moving;
+
+fn stop_if_dead(mut commands: Commands, query: Query<Entity, (With<Moving>, Added<Dead>)>) {
+    for enemy in query.iter() {
+        commands.entity(enemy).try_remove::<Moving>();
+    }
+}
