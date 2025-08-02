@@ -1,7 +1,8 @@
 use std::f32::consts::PI;
 
-use crate::audio::prelude::*;
 use crate::autotimer::prelude::*;
+use crate::effects::prelude::*;
+use crate::{audio::prelude::*, exp_decay::ExpDecay};
 use bevy::{
     prelude::*,
     render::render_resource::{AsBindGroup, ShaderRef},
@@ -13,7 +14,7 @@ use leafwing_input_manager::prelude::ActionState;
 use rand::Rng;
 use tracing::instrument;
 
-use crate::characters::{bullet::BulletLifetime, player::PlayerHitbox, prelude::*};
+use crate::characters::{player::PlayerHitbox, prelude::*};
 use crate::{
     COLORS,
     characters::{
@@ -25,20 +26,22 @@ use crate::{
 };
 
 pub fn player_shoot_plugin(app: &mut App) {
-    app.add_plugins(Material2dPlugin::<PlayerBoomerangMaterial>::default())
+    app.add_plugins(ghost_sprite_plugin::<PlayerBoomerangGhostSprite>)
+        .add_plugins(Material2dPlugin::<PlayerBoomerangMaterial>::default())
         .add_systems(Startup, setup_boomerang_mesh)
         .add_systems(
             FixedUpdate,
             (spin_boomerangs, boomerang_fly).run_if(in_state(GameScreen::Gameplay)),
         )
         .add_systems(
-            Update,
+            FixedUpdate,
             (
                 player_shoot_system,
                 boomerang_activate_after_wrap,
                 boomerang_activate_effects.after(boomerang_fly),
                 boomerang_material_update,
                 boomerang_material_update_no_damage,
+                fade_out_boomerang_ghosts,
             )
                 .chain()
                 .run_if(in_state(GameScreen::Gameplay))
@@ -65,6 +68,9 @@ pub struct PlayerBoomerang {
     traveled: f32,
     max_distance: f32,
 }
+
+#[derive(Component, Debug, Clone, Copy, Default)]
+struct PlayerBoomerangGhostSprite;
 
 impl PlayerBoomerang {
     fn new(max_distance: f32) -> Self {
@@ -191,9 +197,9 @@ fn boomerang_fly(
 fn boomerang_activate_effects(
     mut commands: Commands,
     assets: Res<PlayerAssets>,
-    query: Query<&Transform, (With<PlayerBoomerang>, Added<Damage>)>,
+    query: Query<(Entity, &Transform), (With<PlayerBoomerang>, Added<Damage>)>,
 ) {
-    for transform in query.iter() {
+    for (boomerang, transform) in query.iter() {
         commands.spawn((
             ParticleSpawner::default(),
             ParticleEffectHandle(assets.boomerang_activation_particles.clone()),
@@ -201,22 +207,37 @@ fn boomerang_activate_effects(
             OneShot::Despawn,
         ));
         // TODO: play sounds
+        commands.entity(boomerang).insert((
+            GhostSpriteSpawner::<PlayerBoomerangGhostSprite>::builder()
+                .kind(GhostSpriteSpawnerKind::Infinite)
+                .rate(0.02)
+                .ghost_decay(16.0)
+                .build(),
+        ));
     }
 }
 
 fn boomerang_destroy_close_to_player(
     mut commands: Commands,
-    mut query: Query<(Entity, &mut PlayerBoomerang, &Transform)>,
+    mut query: Query<(
+        Entity,
+        &mut PlayerBoomerang,
+        &Transform,
+        Option<&GhostSpriteSpawner>,
+    )>,
     player_transform: Single<&Transform, With<Player>>,
 ) {
-    for (boomerang_id, boomerang, transform) in query.iter_mut() {
+    for (boomerang_id, boomerang, transform, spawner) in query.iter_mut() {
         if boomerang.traveled > boomerang.max_distance
             && transform
                 .translation
                 .distance_squared(player_transform.translation)
                 < 256.0
         {
-            commands.entity(boomerang_id).try_despawn()
+            commands.entity(boomerang_id).despawn();
+            if let Some(spawner) = spawner {
+                commands.spawn(spawner.clone());
+            }
         }
     }
 }
@@ -224,11 +245,15 @@ fn boomerang_destroy_close_to_player(
 #[instrument(skip_all)]
 fn boomerang_destroy_on_contact(
     mut enemies: Query<(Entity, &CollidingEntities), (With<PlayerBoomerang>, With<Damage>)>,
+    mut spawners: Query<&GhostSpriteSpawner, With<PlayerBoomerang>>,
     mut commands: Commands,
 ) {
     for (boomerang, colliding_entities) in enemies.iter_mut() {
         if !colliding_entities.is_empty() {
             commands.entity(boomerang).try_despawn();
+            if let Ok(spawner) = spawners.get(boomerang) {
+                commands.spawn(spawner.clone());
+            }
         }
     }
 }
@@ -279,6 +304,45 @@ fn boomerang_material_update_no_damage(
     for material in query.iter_mut() {
         if let Some(material) = materials.get_mut(**material) {
             material.color_amount = 0.0;
+        }
+    }
+}
+
+fn fade_out_boomerang_ghosts(
+    mut commands: Commands,
+    mut materials: ResMut<Assets<PlayerBoomerangMaterial>>,
+    ghosts: Query<(
+        Entity,
+        &GhostSpriteGeneric<PlayerBoomerangGhostSprite>,
+        Option<&BoomerangMaterialId>,
+    )>,
+    player_assets: Res<PlayerAssets>,
+    time: Res<Time>,
+) {
+    let dt = time.delta_secs();
+    for (ghost, GhostSpriteGeneric { decay, .. }, material) in ghosts.iter() {
+        let id = match material {
+            Some(BoomerangMaterialId(id)) => *id,
+            None => {
+                let material = materials.add(PlayerBoomerangMaterial {
+                    color_amount: 1.0,
+                    color: COLORS[2].with_alpha(0.8).into(),
+                    disabled_color: COLORS[4].with_alpha(0.8).into(),
+                    base_sampler: player_assets.boomerang_sprite.clone(),
+                });
+                let id = material.id();
+                commands
+                    .entity(ghost)
+                    .insert(BoomerangMaterialId(id))
+                    .insert(MeshMaterial2d(material));
+                id
+            }
+        };
+        let material = materials.get_mut(id).expect("error adding material asset");
+        let alpha = material.color.alpha().exp_decay(0.0, *decay, dt);
+        material.color.set_alpha(alpha);
+        if alpha < 0.005 {
+            commands.entity(ghost).try_despawn();
         }
     }
 }
