@@ -2,7 +2,7 @@
 
 this project has the sauce.
 
-time left as of writing: 43h
+time left as of writing: 26h
 
 ## Todo list
 
@@ -13,9 +13,12 @@ gameplay:
 - [x] enemy 1
 - [x] enemy spawning system
 - [x] killing enemies
-- [ ] basic gameplay loop
+- [x] basic gameplay loop
+- [ ] enemy 2
+- [ ] enemy 3
+- [ ] waves
 
-vfx & sfx:
+(*) vfx & sfx:
 - [x] basic player projectile material
 - [ ] nicer looking boomerangs
 - [x] screen shake

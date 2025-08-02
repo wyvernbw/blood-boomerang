@@ -17,7 +17,9 @@ pub mod prelude {
     pub use super::LookAtPlayer;
     pub use super::character_base;
     pub use super::characters_plugin;
-    pub use super::{AimDir, Character, Damage, Health, Hitbox, Hurtbox, Speed};
+    pub use super::{
+        AimDir, Character, Damage, Dead, Health, Hitbox, Hurtbox, Knockback, Moving, Speed,
+    };
     pub use super::{
         ENEMY_HITBOX_GROUP, ENEMY_HURTBOX_GROUP, PLAYER_HITBOX_GROUP, PLAYER_HURTBOX_GROUP,
     };
@@ -31,9 +33,11 @@ pub fn characters_plugin(screen: GameScreen) -> impl Plugin {
             .add_plugins(bullet_plugin)
             .add_plugins(enemies_plugin)
             .add_systems(
-                Update,
+                FixedUpdate,
                 (
+                    apply_friction.before(apply_character_velocity),
                     apply_character_velocity,
+                    apply_knockback,
                     aim_at_player,
                     point_towards_aim_direction.after(aim_at_player),
                     screen_wrap_system,
@@ -75,7 +79,7 @@ pub struct PrevVelocity(Velocity);
 #[derive(Component, Deref, DerefMut, Clone, Copy)]
 pub struct Health(i32);
 
-#[derive(Component, Deref, DerefMut, Clone, Copy)]
+#[derive(Component, Deref, DerefMut, Clone, Copy, Default)]
 pub struct Damage(i32);
 
 #[derive(Component, Deref, DerefMut, Clone, Copy)]
@@ -99,6 +103,18 @@ fn apply_character_velocity(
     for (mut controller, velocity, mut prev_velocity) in query.iter_mut() {
         controller.translation = Some(velocity.linvel * dt);
         **prev_velocity = *velocity;
+    }
+}
+
+fn apply_friction(
+    mut query: Query<(&mut Velocity, &Speed), (With<Character>, Without<Moving>)>,
+    time: Res<Time>,
+) {
+    let dt = time.delta_secs();
+    for (mut velocity, speed) in query.iter_mut() {
+        velocity.linvel = velocity
+            .linvel
+            .move_towards(Vec2::ZERO, **speed * dt * 10.0);
     }
 }
 
@@ -205,3 +221,29 @@ fn point_towards_aim_direction(
                 .exp_decay(Quat::from_axis_angle(Vec3::Z, angle), 8.0, dt);
     }
 }
+
+#[derive(Component, Debug, Default, DerefMut, Deref)]
+#[require(KnockbackStrength(128.0))]
+pub struct Knockback(Vec2);
+
+#[derive(Component, Debug, DerefMut, Deref)]
+pub struct KnockbackStrength(f32);
+
+fn apply_knockback(
+    mut commands: Commands,
+    mut query: Query<(Entity, &Knockback, &KnockbackStrength, &mut Velocity)>,
+) {
+    for (entity, knockback, knockback_strength, mut velocity) in query.iter_mut() {
+        velocity.linvel += knockback.normalize_or_zero() * knockback_strength.0;
+        commands
+            .entity(entity)
+            .try_remove::<Knockback>()
+            .try_remove::<KnockbackStrength>();
+    }
+}
+
+#[derive(Component, Debug, Default)]
+pub struct Dead;
+
+#[derive(Component, Default, Clone, Copy)]
+pub struct Moving;

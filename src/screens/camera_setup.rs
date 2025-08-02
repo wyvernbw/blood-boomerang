@@ -7,6 +7,7 @@ use bevy::render::render_resource::TextureDimension;
 use bevy::render::render_resource::TextureFormat;
 use bevy::render::render_resource::TextureUsages;
 use bevy::render::view::RenderLayers;
+use bevy_lunex::prelude::*;
 use bevy_simple_screen_boxing::CameraBox;
 use bevy_simple_screen_boxing::CameraBoxingPlugin;
 use bevy_trauma_shake::prelude::*;
@@ -111,6 +112,7 @@ pub(super) fn spawn_camera(mut commands: Commands, mut images: ResMut<Assets<Ima
             resolution: Vec2::new(RES_WIDTH as f32, RES_HEIGHT as f32),
             allow_imperfect_aspect_ratios: false,
         },
+        UiSourceCamera::<0>,
         Projection::Orthographic(projection),
         Msaa::Off,
         OuterCamera,

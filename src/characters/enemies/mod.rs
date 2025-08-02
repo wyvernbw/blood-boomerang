@@ -6,6 +6,7 @@ use bevy_asset_loader::prelude::*;
 use bevy_enoki::prelude::*;
 use bevy_rapier2d::prelude::*;
 use bevy_trauma_shake::prelude::*;
+use bon::Builder;
 use tracing::instrument;
 
 use crate::ShakeExt;
@@ -36,8 +37,9 @@ pub fn enemies_plugin(app: &mut App) {
         .add_event::<EnemyDiedEvent>()
         .add_systems(OnEnter(GameScreen::SplashNext), setup_hit_particle_material)
         .add_systems(
-            Update,
+            FixedUpdate,
             (
+                on_player_died,
                 boids_calculate_separation,
                 boids_move_towards_player.after(boids_calculate_separation),
                 enemy_check_for_player_collisions,
@@ -180,16 +182,28 @@ fn boids_calculate_separation(
 }
 
 fn boids_move_towards_player(
-    mut query: Query<(&mut Velocity, &Transform, &EnemyClass, &mut Boid, &Speed), With<Enemy>>,
-    player_transform: Single<&Transform, With<Player>>,
+    mut commands: Commands,
+    mut query: Query<
+        (
+            Entity,
+            &mut Velocity,
+            &Transform,
+            &EnemyClass,
+            &mut Boid,
+            &Speed,
+        ),
+        With<Enemy>,
+    >,
+    player_transform: Single<&Transform, (With<Player>, Without<Dead>)>,
     time: Res<Time>,
 ) {
     let dt = time.delta_secs();
-    for (mut velocity, transform, enemy_class, boid, speed) in query.iter_mut() {
+    for (enemy, mut velocity, transform, enemy_class, boid, speed) in query.iter_mut() {
         // apply separation
         velocity.linvel += dt * boid.current_separation * boid.separation_speed;
         let distance_to_player = player_transform.translation.distance(transform.translation);
         let mut move_towards_player = || {
+            commands.entity(enemy).try_insert_if_new(Moving);
             let dir_to_player = (player_transform.translation - transform.translation).normalize();
             velocity.linvel = velocity
                 .linvel
@@ -202,27 +216,36 @@ fn boids_move_towards_player(
             EnemyClass::Ranged { max_range } if distance_to_player < *max_range => {
                 move_towards_player();
             }
-            EnemyClass::Ranged { .. } => {}
+            EnemyClass::Ranged { .. } => {
+                commands.entity(enemy).try_remove::<Moving>();
+            }
         }
     }
 }
 
-#[derive(Event, Clone, Copy)]
-pub struct PlayerHitEvent {
-    pub damage: Damage,
+#[instrument(skip_all)]
+fn on_player_died(
+    mut commands: Commands,
+    query: Query<Entity, With<Enemy>>,
+    _: Single<(), (With<Player>, Added<Dead>)>,
+) {
+    tracing::info!("stopping enemies");
+    for enemy in query.iter() {
+        commands.entity(enemy).try_remove::<Moving>();
+    }
 }
 
-impl PlayerHitEvent {
-    pub fn new(damage: Damage) -> Self {
-        Self { damage }
-    }
+#[derive(Event, Clone, Copy, Default, Builder)]
+pub struct PlayerHitEvent {
+    pub damage: Damage,
+    pub source_transform: Option<Transform>,
 }
 
 #[instrument(skip_all)]
 fn enemy_check_for_player_collisions(
     mut events: EventReader<CollisionEvent>,
     mut hit_events: EventWriter<PlayerHitEvent>,
-    hitboxes: Query<&Damage, With<EnemyHitbox>>,
+    hitboxes: Query<(&Damage, Option<&Transform>), With<EnemyHitbox>>,
     player: Single<Entity, With<Player>>,
 ) {
     for event in events.read() {
@@ -236,8 +259,13 @@ fn enemy_check_for_player_collisions(
                 continue;
             };
 
-            if let Ok(damage) = hitboxes.get(enemy_id) {
-                hit_events.write(PlayerHitEvent::new(*damage));
+            if let Ok((damage, transform)) = hitboxes.get(enemy_id) {
+                hit_events.write(
+                    PlayerHitEvent::builder()
+                        .damage(*damage)
+                        .maybe_source_transform(transform.cloned())
+                        .build(),
+                );
             };
         }
     }

@@ -12,9 +12,10 @@ use crate::screens::prelude::*;
 
 pub fn gameplay_plugin(app: &mut App) {
     app.init_resource::<CurrentWave>()
+        .init_resource::<CurrentWaveTime>()
         .add_event::<SpawnWaveEvent>()
         .add_plugins(characters_plugin().screen(GameScreen::Gameplay).call())
-        .add_systems(OnEnter(GameScreen::Gameplay), spawn_player)
+        .add_systems(OnEnter(GameScreen::Gameplay), (spawn_player, reset_wave))
         .add_systems(
             OnExit(GameScreen::Gameplay),
             (despawn_player, despawn_enemies),
@@ -29,6 +30,9 @@ pub fn gameplay_plugin(app: &mut App) {
 #[derive(Resource, DerefMut, Deref, Default)]
 pub struct CurrentWave(usize);
 
+#[derive(Resource, DerefMut, Deref, Default)]
+pub struct CurrentWaveTime(Duration);
+
 #[derive(Builder, Debug, Clone)]
 #[builder(const)]
 struct Wave {
@@ -39,11 +43,11 @@ struct Wave {
 
 const WAVES: &[Wave] = &[
     Wave::builder()
-        .timestamp(Duration::from_secs(8))
+        .timestamp(Duration::from_secs(2))
         .ghost_count(3)
         .build(),
     Wave::builder()
-        .timestamp(Duration::from_secs(13))
+        .timestamp(Duration::from_secs(5))
         .ghost_count(10)
         .build(),
 ];
@@ -86,12 +90,14 @@ fn rand_on_screen_outline() -> Vec2 {
 fn spawn_waves(
     time: Res<Time>,
     mut current_wave: ResMut<CurrentWave>,
+    mut current_wave_time: ResMut<CurrentWaveTime>,
     mut events: EventWriter<SpawnWaveEvent>,
 ) {
     let Some(wave) = WAVES.get(**current_wave) else {
         return;
     };
-    if time.elapsed() > wave.timestamp {
+    **current_wave_time += time.delta();
+    if **current_wave_time > wave.timestamp {
         events.write(SpawnWaveEvent(**current_wave));
         **current_wave += 1;
     }
@@ -117,4 +123,9 @@ fn spawn_wave_event_loop(
             }
         }
     }
+}
+
+fn reset_wave(mut wave: ResMut<CurrentWave>, mut wave_time: ResMut<CurrentWaveTime>) {
+    **wave = 0;
+    **wave_time = Duration::ZERO;
 }
