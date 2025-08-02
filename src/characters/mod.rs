@@ -1,10 +1,13 @@
 use std::f32::consts::PI;
 
+use crate::autotimer::prelude::*;
 use crate::characters::bullet::bullet_plugin;
 use crate::characters::enemies::prelude::*;
 use crate::characters::player::{Player, player_plugin};
 use crate::exp_decay::ExpDecay;
 use crate::screens::prelude::*;
+use bevy::ecs::component::HookContext;
+use bevy::ecs::world::DeferredWorld;
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
@@ -18,7 +21,8 @@ pub mod prelude {
     pub use super::character_base;
     pub use super::characters_plugin;
     pub use super::{
-        AimDir, Character, Damage, Dead, Health, Hitbox, Hurtbox, Knockback, Moving, Speed,
+        AimDir, Character, Damage, Dashing, Dead, Health, Hitbox, Hurtbox, Iframes, Knockback,
+        Moving, Speed,
     };
     pub use super::{
         ENEMY_HITBOX_GROUP, ENEMY_HURTBOX_GROUP, PLAYER_HITBOX_GROUP, PLAYER_HURTBOX_GROUP,
@@ -131,7 +135,7 @@ pub struct Bobbing;
 fn character_bobbing(
     mut query: Query<
         (&mut Transform, &Velocity, &PrevVelocity, &Speed),
-        (With<Character>, With<Bobbing>),
+        (With<Character>, With<Bobbing>, Without<Dashing>),
     >,
     time: Res<Time>,
 ) {
@@ -253,4 +257,17 @@ fn stop_if_dead(mut commands: Commands, query: Query<Entity, (With<Moving>, Adde
     for enemy in query.iter() {
         commands.entity(enemy).try_remove::<Moving>();
     }
+}
+
+#[derive(Component, Default, Deref, DerefMut)]
+#[require(Iframes)]
+#[component(on_remove = remove_iframes)]
+pub struct Dashing(AutoTimer<100, TimerOnce>);
+
+#[derive(Component, Default)]
+pub struct Iframes;
+
+// You can also destructure items directly in the signature
+fn remove_iframes(mut world: DeferredWorld, HookContext { entity, .. }: HookContext) {
+    world.commands().entity(entity).remove::<Iframes>();
 }

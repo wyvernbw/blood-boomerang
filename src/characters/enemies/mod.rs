@@ -248,14 +248,19 @@ fn enemy_check_for_player_collisions(
     mut events: EventReader<CollisionEvent>,
     mut hit_events: EventWriter<PlayerHitEvent>,
     hitboxes: Query<(&Damage, Option<&Transform>), With<EnemyHitbox>>,
-    player: Single<Entity, With<Player>>,
+    player: Single<(Entity, Option<&Iframes>), With<Player>>,
 ) {
+    let (player, iframes) = player.into_inner();
     for event in events.read() {
+        if iframes.is_some() {
+            tracing::info!(?event, "ignored collision event");
+            continue;
+        }
         tracing::trace!(?event);
         if let CollisionEvent::Started(entity_1, entity_2, _) = *event {
-            let (_, enemy_id) = if entity_1 == *player {
+            let (_, enemy_id) = if entity_1 == player {
                 (entity_1, entity_2)
-            } else if entity_2 == *player {
+            } else if entity_2 == player {
                 (entity_2, entity_1)
             } else {
                 continue;

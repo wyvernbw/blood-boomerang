@@ -1,5 +1,7 @@
 use std::marker::PhantomData;
 use std::time::Duration;
+use strum::IntoEnumIterator;
+use tracing::instrument;
 
 use crate::COLORS;
 use crate::ShakeExt;
@@ -8,6 +10,7 @@ use crate::characters::enemies::PlayerHitEvent;
 use crate::characters::player::shoot::PlayerShoot;
 use crate::characters::player::shoot::player_shoot_plugin;
 use crate::characters::prelude::*;
+use crate::effects::prelude::*;
 use crate::screens::prelude::*;
 
 use crate::audio::prelude::*;
@@ -22,8 +25,8 @@ use bevy_asset_loader::prelude::*;
 use bevy_enoki::prelude::*;
 use bevy_rapier2d::prelude::*;
 use bevy_trauma_shake::Shake;
+use leafwing_abilities::prelude::*;
 use leafwing_input_manager::prelude::*;
-use tracing::instrument;
 
 pub mod shoot;
 
@@ -36,9 +39,11 @@ pub mod prelude {
 pub fn player_plugin(app: &mut App) {
     app.add_plugins(player_shoot_plugin)
         .add_plugins(InputManagerPlugin::<PlayerAction>::default())
+        .add_plugins(InputManagerPlugin::<PlayerAbility>::default())
+        .add_plugins(AbilityPlugin::<PlayerAbility>::default())
+        .init_resource::<ActionState<PlayerAction>>()
         // Defined below, detects whether MKB or gamepad are active
         .add_plugins(InputModeManagerPlugin)
-        .init_resource::<ActionState<PlayerAction>>()
         .insert_resource(PlayerAction::default_input_map())
         // Set up the input processing
         .add_systems(
@@ -46,7 +51,7 @@ pub fn player_plugin(app: &mut App) {
             update_boomerang_activation_particles_color,
         )
         .add_systems(
-            Update,
+            FixedUpdate,
             (
                 control_player,
                 player_mouse_aim
@@ -60,6 +65,8 @@ pub fn player_plugin(app: &mut App) {
                     .after(player_die_if_out_of_health)
                     .after(on_player_died),
                 player_step_sounds,
+                player_dash_ability,
+                player_disable_dash_after_timer,
             )
                 .run_if(in_state(GameScreen::Gameplay)),
         )
@@ -129,6 +136,8 @@ pub fn spawn_player(mut commands: Commands, player_assets: Res<PlayerAssets>) {
         })
         .insert(Speed(96.0))
         .insert(Bobbing)
+        .insert(PlayerAbility::input_map())
+        .insert(PlayerAbility::cooldowns())
         .insert(Sprite {
             anchor: bevy::sprite::Anchor::BottomCenter,
             image: player_assets.sprite.clone(),
@@ -166,6 +175,35 @@ impl PlayerAction {
         input_map.insert(Self::Shoot, MouseButton::Left);
 
         input_map
+    }
+}
+
+#[derive(
+    Actionlike, Abilitylike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect, strum::EnumIter,
+)]
+enum PlayerAbility {
+    Dash,
+}
+
+impl PlayerAbility {
+    fn cooldown(&self) -> Cooldown {
+        match self {
+            PlayerAbility::Dash => Cooldown::from_secs(0.5),
+        }
+    }
+
+    fn cooldowns() -> CooldownState<Self> {
+        let mut cooldowns = CooldownState::default();
+        for ability in Self::iter() {
+            cooldowns.set(ability, ability.cooldown());
+        }
+        cooldowns
+    }
+
+    fn input_map() -> InputMap<Self> {
+        InputMap::default()
+            .with(Self::Dash, KeyCode::Space)
+            .with(Self::Dash, GamepadButton::LeftTrigger2)
     }
 }
 
@@ -225,7 +263,10 @@ fn control_player(
     mut commands: Commands,
     time: Res<Time>,
     action_state: Res<ActionState<PlayerAction>>,
-    player_query: Single<(Entity, &mut Velocity, &Speed), (With<Player>, Without<Dead>)>,
+    player_query: Single<
+        (Entity, &mut Velocity, &Speed),
+        (With<Player>, Without<Dead>, Without<Dashing>),
+    >,
 ) {
     let (player, mut player_velocity, player_speed) = player_query.into_inner();
     let dt = time.delta_secs();
@@ -372,4 +413,58 @@ fn player_step_sounds(
             .with_volume(volume.calc_sfx(0.3));
         *step_idx = (*step_idx + 1) % assets.step_sounds.len();
     }
+}
+
+#[instrument(skip_all)]
+fn player_dash_ability(
+    mut commands: Commands,
+    query: Single<
+        (
+            Entity,
+            &mut Velocity,
+            &ActionState<PlayerAbility>,
+            &mut CooldownState<PlayerAbility>,
+        ),
+        (With<Player>, With<Moving>, Without<Dead>),
+    >,
+) -> Result {
+    let (player, mut velocity, actions, mut cooldowns) = query.into_inner();
+    if actions.just_pressed(&PlayerAbility::Dash) {
+        // Calling .trigger checks if the cooldown can be used, then triggers it if so
+        // Note that this may miss other important limitations on when abilities can be used
+        if cooldowns.trigger(&PlayerAbility::Dash).is_ok() {
+            commands.entity(player).insert(Dashing::default()).insert(
+                GhostSpriteSpawner::builder()
+                    .kind(GhostSpriteSpawnerKind::Infinite)
+                    .rate(0.005)
+                    .ghost_decay(10.0)
+                    .build(),
+            );
+            velocity.linvel = velocity.linvel.normalize_or_zero() * 600.0;
+            tracing::info!(?player, "dashed");
+        }
+    }
+    Ok(())
+}
+
+fn player_disable_dash_after_timer(
+    mut commands: Commands,
+    time: Res<Time>,
+    query: Single<(Entity, &mut Velocity, &mut Dashing), (With<Player>, Without<Dead>)>,
+) -> Result {
+    let (player, mut velocity, mut dashing) = query.into_inner();
+    dashing.tick(time.delta());
+    if dashing.elapsed_secs() > dashing.duration().as_secs_f32() * 0.13 {
+        velocity.linvel = velocity
+            .linvel
+            .move_towards(Vec2::ZERO, 600.0 * time.delta_secs());
+    }
+    if dashing.just_finished() {
+        commands
+            .entity(player)
+            .remove::<Dashing>()
+            .remove::<GhostSpriteSpawner>();
+        velocity.linvel = Vec2::ZERO;
+    }
+    Ok(())
 }

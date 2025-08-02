@@ -208,7 +208,7 @@ fn boomerang_activate_effects(
         ));
         // TODO: play sounds
         commands.entity(boomerang).insert((
-            GhostSpriteSpawner::<PlayerBoomerangGhostSprite>::builder()
+            GhostSpriteSpawnerGeneric::<PlayerBoomerangGhostSprite>::builder()
                 .kind(GhostSpriteSpawnerKind::Infinite)
                 .rate(0.02)
                 .ghost_decay(16.0)
@@ -223,7 +223,7 @@ fn boomerang_destroy_close_to_player(
         Entity,
         &mut PlayerBoomerang,
         &Transform,
-        Option<&GhostSpriteSpawner>,
+        Option<&GhostSpriteSpawnerGeneric>,
     )>,
     player_transform: Single<&Transform, With<Player>>,
 ) {
@@ -245,7 +245,7 @@ fn boomerang_destroy_close_to_player(
 #[instrument(skip_all)]
 fn boomerang_destroy_on_contact(
     mut enemies: Query<(Entity, &CollidingEntities), (With<PlayerBoomerang>, With<Damage>)>,
-    mut spawners: Query<&GhostSpriteSpawner, With<PlayerBoomerang>>,
+    mut spawners: Query<&GhostSpriteSpawnerGeneric, With<PlayerBoomerang>>,
     mut commands: Commands,
 ) {
     for (boomerang, colliding_entities) in enemies.iter_mut() {

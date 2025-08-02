@@ -8,7 +8,10 @@ use tracing::instrument;
 pub mod prelude {
     pub use super::ghost_sprite_plugin;
     pub use super::ghost_sprite_plugin_default;
-    pub use super::{GhostSprite, GhostSpriteGeneric, GhostSpriteSpawner, GhostSpriteSpawnerKind};
+    pub use super::{
+        GhostSprite, GhostSpriteGeneric, GhostSpriteSpawner, GhostSpriteSpawnerGeneric,
+        GhostSpriteSpawnerKind,
+    };
 }
 
 pub fn ghost_sprite_plugin_default(app: &mut App) {
@@ -40,7 +43,7 @@ impl<B: Bundle> GhostSpriteGeneric<B> {
 }
 
 #[derive(Component, Debug, Builder, Clone)]
-pub struct GhostSpriteSpawner<B: Bundle = ()> {
+pub struct GhostSpriteSpawnerGeneric<B: Bundle = ()> {
     pub kind: GhostSpriteSpawnerKind,
     #[builder(with = |secs: f32| Timer::from_seconds(secs, TimerMode::Repeating))]
     #[builder(name = rate)]
@@ -51,6 +54,8 @@ pub struct GhostSpriteSpawner<B: Bundle = ()> {
     #[builder(skip)]
     _b: PhantomData<B>,
 }
+
+pub type GhostSpriteSpawner = GhostSpriteSpawnerGeneric<()>;
 
 #[derive(Debug, Clone, Copy)]
 pub enum GhostSpriteSpawnerKind {
@@ -68,7 +73,7 @@ fn spawn_ghost_sprites<B: Bundle>(
     time: Res<Time>,
     mut query: Query<(
         Entity,
-        &mut GhostSpriteSpawner<B>,
+        &mut GhostSpriteSpawnerGeneric<B>,
         Option<&GhostSpriteSpawnerTimer>,
         Option<&Sprite>,
         Option<&Mesh2d>,
@@ -88,7 +93,7 @@ fn spawn_ghost_sprites<B: Bundle>(
                     ))
                     .id();
                 spawner.ghosts.push(ghost_id);
-                tracing::info!(?ghost_id, "spawned sprite ghost with sprite");
+                tracing::trace!(?ghost_id, "spawned sprite ghost with sprite");
             }
             if let Some(mesh) = mesh {
                 let ghost_id = commands
@@ -99,7 +104,7 @@ fn spawn_ghost_sprites<B: Bundle>(
                     ))
                     .id();
                 spawner.ghosts.push(ghost_id);
-                tracing::info!(?ghost_id, "spawned sprite ghost with mesh");
+                tracing::trace!(?ghost_id, "spawned sprite ghost with mesh");
             }
             match (&mut spawner.kind, timer) {
                 (GhostSpriteSpawnerKind::Count(count), _) => {
@@ -107,7 +112,7 @@ fn spawn_ghost_sprites<B: Bundle>(
                     if *count == 0 {
                         commands
                             .entity(entity)
-                            .try_remove::<GhostSpriteSpawner<B>>();
+                            .try_remove::<GhostSpriteSpawnerGeneric<B>>();
                     }
                 }
                 (GhostSpriteSpawnerKind::Time(time), None) => {
@@ -123,7 +128,7 @@ fn spawn_ghost_sprites<B: Bundle>(
                     if timer.finished() {
                         commands
                             .entity(entity)
-                            .try_remove::<GhostSpriteSpawner<B>>();
+                            .try_remove::<GhostSpriteSpawnerGeneric<B>>();
                     }
                 }
                 (GhostSpriteSpawnerKind::Infinite, _) => {}
