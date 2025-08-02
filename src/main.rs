@@ -19,7 +19,20 @@ mod screens;
 pub fn main() {
     let mut app = App::new();
     app.insert_resource(ClearColor(Color::BLACK))
-        .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
+        .add_plugins(
+            DefaultPlugins
+                .set(ImagePlugin::default_nearest())
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        title: "Blood Boomerang".into(),
+                        name: Some("bloodboomerang.app".into()),
+                        fit_canvas_to_parent: true,
+                        prevent_default_event_handling: false,
+                        ..default()
+                    }),
+                    ..default()
+                }),
+        )
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(1.0))
         // .add_plugins(RapierDebugRenderPlugin::default())
         .add_plugins(EnokiPlugin)

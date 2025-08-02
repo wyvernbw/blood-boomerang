@@ -43,6 +43,7 @@ bevy = { version = "0.16", default-features = false, features = [
     "x11",
     "wayland"
 ]  }
+getrandom = { version = "0.3", features = ["wasm_js"] }
 # Compile low-severity logs out of web builds for performance.
 tracing = { version = "0.1", features = [
     "max_level_debug",

@@ -121,7 +121,7 @@ fn player_shoot_system(
             let half_spread = spread / 2.0;
             let angle = rand::rng().random_range(-half_spread..half_spread);
             let material = materials.add(PlayerBoomerangMaterial {
-                color_amount: 0.0,
+                color_amount: LinearRgba::new(0., 0., 0., 0.),
                 color: COLORS[2].into(),
                 disabled_color: COLORS[4].with_alpha(0.8).into(),
                 base_sampler: player_assets.boomerang_sprite.clone(),
@@ -263,9 +263,10 @@ fn boomerang_destroy_on_contact(
 }
 
 #[derive(AsBindGroup, Debug, Clone, Asset, TypePath)]
+#[repr(C)]
 pub struct PlayerBoomerangMaterial {
     #[uniform(0)]
-    color_amount: f32,
+    color_amount: LinearRgba,
     #[uniform(1)]
     color: LinearRgba,
     #[texture(2)]
@@ -296,7 +297,7 @@ fn boomerang_material_update(
             continue;
         }
         if let Some(material) = materials.get_mut(**material) {
-            material.color_amount = 1.0;
+            material.color_amount = LinearRgba::new(1.0, 0.0, 0.0, 0.0);
         }
     }
 }
@@ -307,7 +308,7 @@ fn boomerang_material_update_no_damage(
 ) {
     for material in query.iter_mut() {
         if let Some(material) = materials.get_mut(**material) {
-            material.color_amount = 0.0;
+            material.color_amount = LinearRgba::new(0.0, 0.0, 0.0, 0.0);
         }
     }
 }
@@ -329,7 +330,7 @@ fn fade_out_boomerang_ghosts(
             Some(BoomerangMaterialId(id)) => *id,
             None => {
                 let material = materials.add(PlayerBoomerangMaterial {
-                    color_amount: 1.0,
+                    color_amount: LinearRgba::new(1.0, 0.0, 0.0, 0.0),
                     color: COLORS[2].with_alpha(0.8).into(),
                     disabled_color: COLORS[4].with_alpha(0.8).into(),
                     base_sampler: player_assets.boomerang_sprite.clone(),

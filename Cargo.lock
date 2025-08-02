@@ -1653,6 +1653,7 @@ dependencies = [
  "bevy_tweening",
  "bon",
  "color-eyre",
+ "getrandom 0.3.3",
  "leafwing-input-manager",
  "leafwing_abilities",
  "rand 0.9.2",
