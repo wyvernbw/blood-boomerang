@@ -2,7 +2,7 @@
 
 this project has the sauce.
 
-time left as of writing: 26h
+time left as of writing: 21h
 
 ## Todo list
 
@@ -20,7 +20,7 @@ gameplay:
 
 (*) vfx & sfx:
 - [x] basic player projectile material
-- [ ] nicer looking boomerangs
+- [x] nicer looking boomerangs
 - [x] screen shake
 - [x] particles
 - [x] shoot sfx
