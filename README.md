@@ -24,10 +24,10 @@ gameplay:
 - [x] screen shake
 - [x] particles
 - [ ] shoot sfx
-- [ ] walk sfx
-- [ ] hit impact sfx (2)
+- [x] walk sfx
+- [x] hit impact sfx (2)
 - [ ] death sfx
-- [ ] menu sfx
+- [x] menu sfx
 
 music:
 - [ ] menu theme

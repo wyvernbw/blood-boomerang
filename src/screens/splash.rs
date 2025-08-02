@@ -2,9 +2,11 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 
-use crate::screens::GameScreen;
+use crate::audio::prelude::*;
+use crate::screens::{GameScreen, MenuAssets};
 
 pub mod prelude {
+    pub use super::play_menu_sound;
     pub use super::splash_screen_plugin;
 }
 
@@ -15,7 +17,9 @@ pub fn splash_screen_plugin(app: &mut App) {
             Update,
             splash_next_system.run_if(in_state(GameScreen::SplashNext)),
         )
-        .add_systems(OnExit(GameScreen::SplashNext), despawn_splash_screen);
+        .add_systems(OnExit(GameScreen::SplashNext), despawn_splash_screen)
+        .add_systems(OnEnter(GameScreen::SplashNext), play_menu_sound)
+        .add_systems(OnExit(GameScreen::SplashNext), play_menu_sound);
 }
 
 #[derive(Component, Default, Debug)]
@@ -51,4 +55,10 @@ fn splash_next_system(
 
 fn despawn_splash_screen(mut commands: Commands, splash: Single<Entity, With<SplashScreen>>) {
     commands.entity(*splash).try_despawn();
+}
+
+pub fn play_menu_sound(audio: Res<Audio>, volume: Res<VolumeSettings>, assets: Res<MenuAssets>) {
+    audio
+        .play(assets.menu_sound.clone())
+        .with_volume(volume.calc_sfx(1.0));
 }

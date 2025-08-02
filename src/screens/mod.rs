@@ -2,6 +2,7 @@ use bevy::dev_tools::states::log_transitions;
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
 
+use crate::audio::prelude::*;
 use crate::screens::after_death::prelude::*;
 use crate::screens::splash::prelude::*;
 use crate::screens::{camera_setup::camera_setup_plugin, gameplay::gameplay_plugin};
@@ -20,7 +21,9 @@ pub mod prelude {
 pub fn screens_plugin(app: &mut App) {
     app.init_state::<GameScreen>()
         .add_loading_state(
-            LoadingState::new(GameScreen::SplashFirst).continue_to_state(GameScreen::SplashNext),
+            LoadingState::new(GameScreen::SplashFirst)
+                .continue_to_state(GameScreen::SplashNext)
+                .load_collection::<MenuAssets>(),
         )
         .add_plugins(camera_setup_plugin)
         .add_plugins(gameplay_plugin)
@@ -36,4 +39,10 @@ pub enum GameScreen {
     SplashNext,
     Gameplay,
     AfterDeath,
+}
+
+#[derive(Resource, AssetCollection, Debug)]
+pub struct MenuAssets {
+    #[asset(path = "menu.wav")]
+    menu_sound: Handle<AudioSource>,
 }

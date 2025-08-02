@@ -3,6 +3,7 @@ use crate::autotimer::prelude::*;
 use crate::characters::enemies::prelude::*;
 use crate::characters::player::prelude::*;
 use crate::screens::prelude::*;
+use crate::screens::splash::play_menu_sound;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
 use tracing::instrument;
@@ -13,8 +14,14 @@ pub mod prelude {
 
 pub fn after_death_plugin(app: &mut App) {
     app.add_plugins(InputManagerPlugin::<DeathScreenAction>::default())
-        .add_systems(OnEnter(GameScreen::AfterDeath), spawn_black_screen)
-        .add_systems(OnExit(GameScreen::AfterDeath), despawn_black_screen)
+        .add_systems(
+            OnEnter(GameScreen::AfterDeath),
+            (spawn_black_screen, play_menu_sound),
+        )
+        .add_systems(
+            OnExit(GameScreen::AfterDeath),
+            (despawn_black_screen, play_menu_sound),
+        )
         .add_systems(
             Update,
             (spawn_black_screen_ui, input_system).run_if(in_state(GameScreen::AfterDeath)),
