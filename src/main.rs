@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_enoki::prelude::*;
+use bevy_kira_audio::prelude::*;
 use bevy_lunex::prelude::*;
 use bevy_rapier2d::prelude::*;
 use bevy_trauma_shake::prelude::*;
@@ -22,6 +23,7 @@ pub fn main() {
         .add_plugins(TweeningPlugin)
         .add_plugins(TraumaPlugin)
         .add_plugins(UiLunexPlugins)
+        .add_plugins(AudioPlugin)
         .add_plugins(screens_plugin);
     app.run();
 }

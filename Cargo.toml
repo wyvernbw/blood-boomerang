@@ -64,7 +64,7 @@ color-eyre = "0.6.5"
 strum = { version = "0.27.1", features = ["derive"] }
 leafwing-input-manager = "0.17.0"
 leafwing_abilities = "0.11.0"
-bevy_kira_audio = "0.23.0"
+bevy_kira_audio = { version = "0.23.0", features = ["wav"] }
 bevy_asset_loader = "0.23.0"
 bevy_tweening = "0.13.0"
 bevy_simple_screen_boxing = "0.1.1"

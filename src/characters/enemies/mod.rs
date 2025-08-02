@@ -4,6 +4,7 @@ use std::sync::Arc;
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
 use bevy_enoki::prelude::*;
+use bevy_kira_audio::prelude::*;
 use bevy_rapier2d::prelude::*;
 use bevy_trauma_shake::prelude::*;
 use bon::Builder;
@@ -32,6 +33,7 @@ pub fn enemies_plugin(app: &mut App) {
         .configure_loading_state(
             LoadingStateConfig::new(GameScreen::SplashFirst).load_collection::<EnemyAssets>(),
         )
+        .add_systems(OnExit(GameScreen::SplashFirst), debug_print_enemy_assets)
         .add_event::<PlayerHitEvent>()
         .add_event::<EnemyHitEvent>()
         .add_event::<EnemyDiedEvent>()
@@ -311,12 +313,25 @@ fn handle_enemy_died_events(
     }
 }
 
-#[derive(Resource, AssetCollection)]
+#[derive(Resource, AssetCollection, Debug)]
 struct EnemyAssets {
     #[asset(path = "enemies/hit.particles.ron")]
     hit_particles: Handle<Particle2dEffect>,
     #[asset(path = "enemies/hit_particle.png")]
     hit_particles_texture: Handle<Image>,
+    #[asset(
+        paths(
+            "enemies/hit_sounds/hit_1.wav",
+            "enemies/hit_sounds/hit_2.wav",
+            "enemies/hit_sounds/hit_3.wav"
+        ),
+        collection(typed)
+    )]
+    hit_sounds: Vec<Handle<AudioSource>>,
+}
+
+fn debug_print_enemy_assets(assets: Res<EnemyAssets>) {
+    tracing::info!(enemy_assets = ?assets.into_inner());
 }
 
 #[derive(Resource, Deref, DerefMut)]
@@ -337,6 +352,8 @@ fn handle_enemy_hit_events(
     mut events: EventReader<EnemyHitEvent>,
     mut commands: Commands,
     assets: Res<EnemyAssets>,
+    audio: Res<Audio>,
+    mut hit_sound_idx: Local<usize>,
     mut query: Query<&Transform, With<Enemy>>,
     mut shake: Single<&mut Shake>,
     hit_particles_material: Res<HitParticleMaterial>,
@@ -357,6 +374,8 @@ fn handle_enemy_hit_events(
                     .with_rotation(Quat::from_axis_angle(Vec3::Z, from_hitbox.xy().to_angle())),
             );
         shake.apply_trauma(0.1);
+        audio.play(assets.hit_sounds[*hit_sound_idx].clone());
+        *hit_sound_idx = (*hit_sound_idx + 1) % assets.hit_sounds.len();
     }
     Ok(())
 }
