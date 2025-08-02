@@ -26,7 +26,7 @@ gameplay:
 - [ ] shoot sfx
 - [x] walk sfx
 - [x] hit impact sfx (2)
-- [ ] death sfx
+- [x] death sfx
 - [x] menu sfx
 
 music:

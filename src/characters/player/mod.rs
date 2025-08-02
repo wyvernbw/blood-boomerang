@@ -85,6 +85,8 @@ pub struct PlayerAssets {
         collection(typed)
     )]
     step_sounds: Vec<Handle<AudioSource>>,
+    #[asset(path = "player/sounds/death.wav")]
+    death_sound: Handle<AudioSource>,
 }
 
 fn update_boomerang_activation_particles_color(
@@ -324,10 +326,19 @@ fn player_die_if_out_of_health(
 #[derive(Debug, Resource, Default, Component, Deref, DerefMut)]
 pub struct PlayerDeathEffectsTimer(AutoTimer<800, TimerOnce>);
 
-fn on_player_died(mut commands: Commands, player: Single<Entity, (With<Player>, Added<Dead>)>) {
+fn on_player_died(
+    mut commands: Commands,
+    player: Single<Entity, (With<Player>, Added<Dead>)>,
+    audio: Res<Audio>,
+    volume: Res<VolumeSettings>,
+    assets: Res<PlayerAssets>,
+) {
     commands
         .entity(*player)
         .insert(PlayerDeathEffectsTimer::default());
+    audio
+        .play(assets.death_sound.clone())
+        .with_volume(volume.calc_sfx(1.0));
 }
 
 fn player_died_effects(
