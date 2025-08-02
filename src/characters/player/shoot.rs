@@ -1,5 +1,6 @@
 use std::f32::consts::PI;
 
+use crate::ShakeExt;
 use crate::autotimer::prelude::*;
 use crate::effects::prelude::*;
 use crate::{audio::prelude::*, exp_decay::ExpDecay};
@@ -10,6 +11,7 @@ use bevy::{
 };
 use bevy_enoki::prelude::*;
 use bevy_rapier2d::prelude::*;
+use bevy_trauma_shake::Shake;
 use leafwing_input_manager::prelude::ActionState;
 use rand::Rng;
 use tracing::instrument;
@@ -100,6 +102,7 @@ fn player_shoot_system(
     audio: Res<Audio>,
     volume: Res<VolumeSettings>,
     mut shoot_timer: Local<AutoTimer<100, TimerRepeating>>,
+    mut shake: Single<&mut Shake>,
 ) {
     let dt = time.delta_secs();
     let mesh_handle = meshes.clone();
@@ -124,6 +127,7 @@ fn player_shoot_system(
                 base_sampler: player_assets.boomerang_sprite.clone(),
             });
             let direction = Vec2::from_angle(aim_dir.to_angle() + angle);
+            shake.apply_trauma(0.1);
             commands
                 .spawn(bullet_base(2.0))
                 // .remove::<BulletLifetime>()

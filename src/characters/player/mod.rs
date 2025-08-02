@@ -427,6 +427,7 @@ fn player_dash_ability(
         ),
         (With<Player>, With<Moving>, Without<Dead>),
     >,
+    mut shake: Single<&mut Shake>,
 ) -> Result {
     let (player, mut velocity, actions, mut cooldowns) = query.into_inner();
     if actions.just_pressed(&PlayerAbility::Dash) {
@@ -436,11 +437,12 @@ fn player_dash_ability(
             commands.entity(player).insert(Dashing::default()).insert(
                 GhostSpriteSpawner::builder()
                     .kind(GhostSpriteSpawnerKind::Infinite)
-                    .rate(0.005)
+                    .rate(0.001)
                     .ghost_decay(10.0)
                     .build(),
             );
             velocity.linvel = velocity.linvel.normalize_or_zero() * 600.0;
+            shake.apply_trauma(0.2);
             tracing::info!(?player, "dashed");
         }
     }
