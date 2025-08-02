@@ -1,5 +1,7 @@
 use std::f32::consts::PI;
 
+use crate::audio::prelude::*;
+use crate::autotimer::prelude::*;
 use bevy::{
     prelude::*,
     render::render_resource::{AsBindGroup, ShaderRef},
@@ -89,12 +91,21 @@ fn player_shoot_system(
     action_state: Res<ActionState<PlayerAction>>,
     mut cooldown: Local<f32>,
     player_assets: Res<PlayerAssets>,
+    audio: Res<Audio>,
+    volume: Res<VolumeSettings>,
+    mut shoot_timer: Local<AutoTimer<100, TimerRepeating>>,
 ) {
     let dt = time.delta_secs();
     let mesh_handle = meshes.clone();
     let (transform, &aim_dir, &PlayerShoot { rate, spread }) = player.into_inner();
     if action_state.pressed(&PlayerAction::Shoot) {
         *cooldown -= dt;
+        shoot_timer.tick(time.delta());
+        if shoot_timer.just_finished() {
+            audio
+                .play(player_assets.shoot_sound.clone())
+                .with_volume(volume.calc_sfx(1.0));
+        }
         if *cooldown <= 0.0 {
             *cooldown += rate;
             // shoot

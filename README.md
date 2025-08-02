@@ -23,7 +23,7 @@ gameplay:
 - [ ] nicer looking boomerangs
 - [x] screen shake
 - [x] particles
-- [ ] shoot sfx
+- [x] shoot sfx
 - [x] walk sfx
 - [x] hit impact sfx (2)
 - [x] death sfx

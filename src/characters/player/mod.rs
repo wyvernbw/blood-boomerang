@@ -87,6 +87,8 @@ pub struct PlayerAssets {
     step_sounds: Vec<Handle<AudioSource>>,
     #[asset(path = "player/sounds/death.wav")]
     death_sound: Handle<AudioSource>,
+    #[asset(path = "player/sounds/shoot.wav")]
+    shoot_sound: Handle<AudioSource>,
 }
 
 fn update_boomerang_activation_particles_color(
