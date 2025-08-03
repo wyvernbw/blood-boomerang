@@ -39,6 +39,7 @@ pub fn characters_plugin(screen: GameScreen) -> impl Plugin {
             .add_systems(
                 FixedUpdate,
                 (
+                    speed_mod_update_speed,
                     stop_if_dead.before(apply_friction),
                     apply_friction.before(apply_character_velocity),
                     apply_character_velocity,
@@ -270,4 +271,44 @@ pub struct Iframes;
 // You can also destructure items directly in the signature
 fn remove_iframes(mut world: DeferredWorld, HookContext { entity, .. }: HookContext) {
     world.commands().entity(entity).remove::<Iframes>();
+}
+
+#[derive(Component, Clone, Copy, Deref, DerefMut)]
+#[component(on_add = speed_mod_on_add, on_remove = speed_mod_on_remove)]
+pub struct SpeedMod(f32);
+
+#[derive(Component, Clone, Copy, Deref, DerefMut)]
+pub struct OriginalSpeed(Speed);
+
+fn speed_mod_on_add(mut world: DeferredWorld, context: HookContext) {
+    if let Some(speed) = world.entity(context.entity).get_components::<&Speed>() {
+        let speed = *speed;
+        world
+            .commands()
+            .entity(context.entity)
+            .try_insert(OriginalSpeed(speed));
+    }
+}
+
+fn speed_mod_on_remove(mut world: DeferredWorld, context: HookContext) {
+    if let Some(data) = world
+        .entity(context.entity)
+        .get_components::<(&Speed, &OriginalSpeed)>()
+    {
+        let (&_, &original_speed) = data;
+        world
+            .commands()
+            .entity(context.entity)
+            .try_insert(original_speed.0);
+    }
+    world
+        .commands()
+        .entity(context.entity)
+        .try_remove::<OriginalSpeed>();
+}
+
+fn speed_mod_update_speed(mut query: Query<(&mut Speed, &SpeedMod, &OriginalSpeed)>) {
+    for (mut speed, speed_mod, og_speed) in query.iter_mut() {
+        **speed = speed_mod.0 * *og_speed.0;
+    }
 }

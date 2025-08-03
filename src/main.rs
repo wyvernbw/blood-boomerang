@@ -1,3 +1,4 @@
+#![feature(trait_alias)]
 use crate::audio::prelude::*;
 use bevy::prelude::*;
 use bevy_enoki::prelude::*;

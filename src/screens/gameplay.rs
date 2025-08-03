@@ -4,7 +4,8 @@ use bevy::prelude::*;
 use bon::Builder;
 use rand::Rng;
 
-use crate::characters::enemies::ghost::prelude::*;
+use crate::characters::enemies::coffin::prelude::*;
+use crate::characters::enemies::ghost::{CommandsGhost, prelude::*};
 use crate::characters::enemies::prelude::*;
 use crate::characters::player::prelude::*;
 use crate::characters::prelude::*;
@@ -39,6 +40,8 @@ struct Wave {
     timestamp: Duration,
     #[builder(default = 0)]
     ghost_count: usize,
+    #[builder(default = 0)]
+    coffin_count: usize,
 }
 
 const WAVES: &[Wave] = &[
@@ -47,8 +50,9 @@ const WAVES: &[Wave] = &[
         .ghost_count(3)
         .build(),
     Wave::builder()
-        .timestamp(Duration::from_secs(5))
-        .ghost_count(10)
+        .timestamp(Duration::from_secs(6))
+        // .ghost_count(5)
+        .coffin_count(1)
         .build(),
 ];
 
@@ -84,7 +88,7 @@ fn random_point_on_rectangle_perimeter(center: Vec2, width: f32, height: f32) ->
 }
 
 fn rand_on_screen_outline() -> Vec2 {
-    random_point_on_rectangle_perimeter(Vec2::ZERO, RES_WIDTH as f32, RES_HEIGHT as f32)
+    random_point_on_rectangle_perimeter(Vec2::ZERO, RES_WIDTH as f32 + 16., RES_HEIGHT as f32 + 16.)
 }
 
 fn spawn_waves(
@@ -110,15 +114,32 @@ fn spawn_wave_event_loop(
     mut commands: Commands,
     mut events: EventReader<SpawnWaveEvent>,
     ghost_assets: Res<GhostAssets>,
+    coffin_assets: Res<CoffinAssets>,
 ) {
     for event in events.read() {
         if let Some(wave) = WAVES.get(**event) {
             for _ in 0..(wave.ghost_count) {
                 let pos = rand_on_screen_outline();
-                spawn_ghost()
-                    .commands(&mut commands)
-                    .assets(&ghost_assets)
-                    .call()
+                commands
+                    .spawn_ghost(GhostArgs::builder().assets(&ghost_assets).build())
+                    .insert(Transform::from_translation(pos.extend(0.0)));
+            }
+            for _ in 0..wave.coffin_count {
+                let pos = rand_on_screen_outline();
+                commands
+                    .spawn_coffin(
+                        CoffinArgs::builder()
+                            .assets(&coffin_assets)
+                            .coffin(
+                                Coffin::builder()
+                                    .initial_rate(Duration::from_secs_f32(1.0))
+                                    .rate(Duration::from_secs_f32(5.0))
+                                    .count(5)
+                                    .spacing(32.0)
+                                    .build(),
+                            )
+                            .build(),
+                    )
                     .insert(Transform::from_translation(pos.extend(0.0)));
             }
         }

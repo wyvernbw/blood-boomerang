@@ -1,7 +1,10 @@
 use std::f32::consts::PI;
+use std::marker::PhantomData;
 use std::sync::Arc;
+use std::time::Duration;
 
 use crate::audio::prelude::*;
+use crate::characters::enemies::ghost::CommandsGhost;
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
 use bevy_enoki::prelude::*;
@@ -13,6 +16,7 @@ use tracing::instrument;
 use crate::ShakeExt;
 use crate::characters::Speed;
 use crate::characters::character_base;
+use crate::characters::enemies::coffin::prelude::*;
 use crate::characters::enemies::ghost::prelude::*;
 use crate::characters::player::Player;
 use crate::characters::prelude::*;
@@ -25,11 +29,13 @@ pub mod prelude {
     pub use super::{Enemy, EnemyClass, EnemyHitbox, EnemyHurtbox};
 }
 
+pub mod coffin;
 pub mod ghost;
 
 pub fn enemies_plugin(app: &mut App) {
     app.insert_resource(BoidSeparationUpdateRate::PerFrame)
         .add_plugins(ghost_plugin)
+        .add_plugins(coffin_plugin)
         .configure_loading_state(
             LoadingStateConfig::new(GameScreen::SplashFirst).load_collection::<EnemyAssets>(),
         )
@@ -215,7 +221,7 @@ fn boids_move_towards_player(
             EnemyClass::Melee => {
                 move_towards_player();
             }
-            EnemyClass::Ranged { max_range } if distance_to_player < *max_range => {
+            EnemyClass::Ranged { max_range } if distance_to_player > *max_range => {
                 move_towards_player();
             }
             EnemyClass::Ranged { .. } => {
