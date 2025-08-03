@@ -10,6 +10,7 @@ use rand::{Rng, rng};
 use crate::characters::enemies::ghost::{CommandsGhost, prelude::*};
 use crate::characters::enemies::prelude::*;
 use crate::characters::{SpeedMod, prelude::*};
+use crate::effects::prelude::*;
 use crate::exp_decay::ExpDecay;
 use crate::screens::prelude::*;
 
@@ -74,6 +75,13 @@ impl<'w, 's> CommandsCoffin<CoffinArgs<'_>> for Commands<'w, 's> {
             .insert(Speed(48.0))
             .insert(ColliderDebugColor(Hsla::new(0.0, 0.0, 0.0, 0.0)))
             .insert(EnemyClass::Ranged { max_range: 64.0 })
+            .insert(
+                GhostSpriteSpawner::builder()
+                    .kind(GhostSpriteSpawnerKind::Infinite)
+                    .rate(0.05)
+                    .ghost_decay(8.0)
+                    .build(),
+            )
             .with_children(|parent| {
                 parent.spawn((
                     EnemyHitbox,
