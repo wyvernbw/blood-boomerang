@@ -49,4 +49,6 @@ pub enum GameScreen {
 pub struct MenuAssets {
     #[asset(path = "menu.wav")]
     menu_sound: Handle<AudioSource>,
+    #[asset(path = "music/gardenella_horror.wav")]
+    background_music: Handle<AudioSource>,
 }

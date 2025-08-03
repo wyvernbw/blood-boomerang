@@ -12,7 +12,10 @@ pub mod prelude {
 
 pub fn splash_screen_plugin(app: &mut App) {
     app.add_systems(OnEnter(GameScreen::SplashFirst), spawn_splash_screen)
-        .add_systems(OnExit(GameScreen::SplashFirst), continue_to_splash_next)
+        .add_systems(
+            OnExit(GameScreen::SplashFirst),
+            (continue_to_splash_next, play_bg_music),
+        )
         .add_systems(
             Update,
             splash_next_system.run_if(in_state(GameScreen::SplashNext)),
@@ -61,4 +64,12 @@ pub fn play_menu_sound(audio: Res<Audio>, volume: Res<VolumeSettings>, assets: R
     audio
         .play(assets.menu_sound.clone())
         .with_volume(volume.calc_sfx(1.0));
+}
+
+fn play_bg_music(audio: Res<Audio>, assets: Res<MenuAssets>) {
+    audio
+        .play(assets.background_music.clone())
+        .looped()
+        .fade_in(AudioTween::linear(Duration::from_secs_f32(2.0)))
+        .with_volume(0.2);
 }
