@@ -51,3 +51,15 @@ impl<const T: u64, W> std::ops::DerefMut for AutoTimer<T, W> {
         &mut self.inner
     }
 }
+
+impl<const M: u64> From<AutoTimer<M, TimerOnce>> for Timer {
+    fn from(value: AutoTimer<M, TimerOnce>) -> Self {
+        value.inner
+    }
+}
+
+impl<const M: u64> From<AutoTimer<M, TimerRepeating>> for Timer {
+    fn from(value: AutoTimer<M, TimerRepeating>) -> Self {
+        value.inner
+    }
+}

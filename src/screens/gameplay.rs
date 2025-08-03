@@ -6,6 +6,7 @@ use rand::Rng;
 
 use crate::characters::enemies::coffin::prelude::*;
 use crate::characters::enemies::ghost::{CommandsGhost, prelude::*};
+use crate::characters::enemies::hand::{CommandsHand, Hand, HandArgs, HandAssets};
 use crate::characters::enemies::prelude::*;
 use crate::characters::player::prelude::*;
 use crate::characters::prelude::*;
@@ -42,17 +43,26 @@ struct Wave {
     ghost_count: usize,
     #[builder(default = 0)]
     coffin_count: usize,
+    #[builder(default = 0)]
+    hand_count: usize,
 }
 
 const WAVES: &[Wave] = &[
     Wave::builder()
         .timestamp(Duration::from_secs(2))
+        .hand_count(3)
         .ghost_count(3)
         .build(),
     Wave::builder()
         .timestamp(Duration::from_secs(6))
         // .ghost_count(5)
         .coffin_count(1)
+        .build(),
+    Wave::builder()
+        .timestamp(Duration::from_secs(9))
+        // .ghost_count(5)
+        .coffin_count(2)
+        .hand_count(1)
         .build(),
 ];
 
@@ -115,6 +125,7 @@ fn spawn_wave_event_loop(
     mut events: EventReader<SpawnWaveEvent>,
     ghost_assets: Res<GhostAssets>,
     coffin_assets: Res<CoffinAssets>,
+    hand_assets: Res<HandAssets>,
 ) {
     for event in events.read() {
         if let Some(wave) = WAVES.get(**event) {
@@ -136,6 +147,21 @@ fn spawn_wave_event_loop(
                                     .rate(Duration::from_secs_f32(5.0))
                                     .count(5)
                                     .spacing(32.0)
+                                    .build(),
+                            )
+                            .build(),
+                    )
+                    .insert(Transform::from_translation(pos.extend(0.0)));
+            }
+            for _ in 0..wave.hand_count {
+                let pos = rand_on_screen_outline();
+                commands
+                    .spawn_hand(
+                        HandArgs::builder()
+                            .assets(&hand_assets)
+                            .hand(
+                                Hand::builder()
+                                    .shoot_rate(Duration::from_secs_f32(1.5))
                                     .build(),
                             )
                             .build(),

@@ -42,7 +42,8 @@ pub fn bullet_base(lifetime: f32) -> impl Bundle {
         Bullet,
         BulletLifetime(lifetime),
         ScreenWrap,
-        RigidBody::KinematicVelocityBased,
+        Sensor,
+        ActiveEvents::COLLISION_EVENTS,
         KinematicCharacterController::default(),
         Velocity::default(),
     )

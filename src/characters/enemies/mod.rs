@@ -5,6 +5,7 @@ use std::time::Duration;
 
 use crate::audio::prelude::*;
 use crate::characters::enemies::ghost::CommandsGhost;
+use crate::characters::enemies::hand::hand_plugin;
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
 use bevy_enoki::prelude::*;
@@ -31,11 +32,13 @@ pub mod prelude {
 
 pub mod coffin;
 pub mod ghost;
+pub mod hand;
 
 pub fn enemies_plugin(app: &mut App) {
     app.insert_resource(BoidSeparationUpdateRate::PerFrame)
         .add_plugins(ghost_plugin)
         .add_plugins(coffin_plugin)
+        .add_plugins(hand_plugin)
         .configure_loading_state(
             LoadingStateConfig::new(GameScreen::SplashFirst).load_collection::<EnemyAssets>(),
         )

@@ -213,18 +213,22 @@ fn aim_at_player(
     }
 }
 
+#[derive(Component, Debug, Default, DerefMut, Deref, Clone, Copy)]
+pub struct AimDirRotationOffset(f32);
+
 fn point_towards_aim_direction(
-    mut query: Query<(&mut Transform, &AimDir), Without<Bobbing>>,
+    mut query: Query<(&mut Transform, &AimDir, Option<&AimDirRotationOffset>), Without<Bobbing>>,
     time: Res<Time>,
 ) {
     let dt = time.delta_secs();
-    for (mut transform, aim_dir) in query.iter_mut() {
+    for (mut transform, aim_dir, offset) in query.iter_mut() {
         let angle = aim_dir.to_angle() + PI / 2.;
         // transform.rotation = Quat::from_axis_angle(Vec3::Z, angle);
-        transform.rotation =
-            transform
-                .rotation
-                .exp_decay(Quat::from_axis_angle(Vec3::Z, angle), 8.0, dt);
+        transform.rotation = transform.rotation.exp_decay(
+            Quat::from_axis_angle(Vec3::Z, angle + *offset.cloned().unwrap_or_default()),
+            8.0,
+            dt,
+        );
     }
 }
 
