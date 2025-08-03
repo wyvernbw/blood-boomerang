@@ -1,4 +1,4 @@
-# Gmtk 2025 Loop Racer
+# Gmtk 2025 Loop Shooter "Blood Boomerang"
 
 this project has the sauce.
 
