@@ -1656,6 +1656,7 @@ dependencies = [
  "getrandom 0.3.3",
  "leafwing-input-manager",
  "leafwing_abilities",
+ "moonshine-save",
  "rand 0.9.2",
  "strum 0.27.2",
  "tracing",
@@ -3350,6 +3351,34 @@ dependencies = [
  "log",
  "wasi 0.11.0+wasi-snapshot-preview1",
  "windows-sys 0.59.0",
+]
+
+[[package]]
+name = "moonshine-save"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "09b361d891442074d821cd2896b8b0d2091bc8530a2d867b4ae831c965bdff4e"
+dependencies = [
+ "bevy_app",
+ "bevy_ecs",
+ "bevy_log",
+ "bevy_platform",
+ "bevy_reflect",
+ "bevy_scene",
+ "bevy_utils",
+ "moonshine-util",
+ "serde",
+]
+
+[[package]]
+name = "moonshine-util"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "12534e20e4ec4953e53fb7541dcef4c51cb14b2a64728a668cf593c664132a2e"
+dependencies = [
+ "bevy_app",
+ "bevy_ecs",
+ "disqualified",
 ]
 
 [[package]]

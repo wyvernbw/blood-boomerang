@@ -60,7 +60,7 @@ pub fn enemies_plugin(app: &mut App) {
                     .after(enemies_take_damage)
                     .before(handle_enemy_died_events),
             )
-                .run_if(in_state(GameScreen::Gameplay)),
+                .run_if(not(in_state(GameScreen::SplashFirst))),
         );
 }
 

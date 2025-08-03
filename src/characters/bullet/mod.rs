@@ -14,11 +14,12 @@ pub fn bullet_plugin(app: &mut App) {
             bullet_count_wraps,
             bullets_despawn_from_wraps,
         )
-            .run_if(in_state(GameScreen::Gameplay)),
+            .run_if(not(in_state(GameScreen::SplashFirst))),
     )
     .add_systems(
         PostUpdate,
-        (bullet_lifetime_tick, bullets_despawn_from_wraps).run_if(in_state(GameScreen::Gameplay)),
+        (bullet_lifetime_tick, bullets_despawn_from_wraps)
+            .run_if(not(in_state(GameScreen::SplashFirst))),
     );
 }
 

@@ -42,7 +42,8 @@ pub fn main() {
         .add_plugins(UiLunexPlugins)
         .add_plugins(my_audio_plugin)
         .add_plugins(effects_plugin)
-        .add_plugins(screens_plugin);
+        .add_plugins(screens_plugin)
+        .add_plugins(characters_plugin);
     app.run();
 }
 

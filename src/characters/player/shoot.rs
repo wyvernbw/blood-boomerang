@@ -33,7 +33,7 @@ pub fn player_shoot_plugin(app: &mut App) {
         .add_systems(Startup, setup_boomerang_mesh)
         .add_systems(
             FixedUpdate,
-            (spin_boomerangs, boomerang_fly).run_if(in_state(GameScreen::Gameplay)),
+            (spin_boomerangs, boomerang_fly).run_if(not(in_state(GameScreen::SplashFirst))),
         )
         .add_systems(
             FixedUpdate,
@@ -46,7 +46,7 @@ pub fn player_shoot_plugin(app: &mut App) {
                 fade_out_boomerang_ghosts,
             )
                 .chain()
-                .run_if(in_state(GameScreen::Gameplay))
+                .run_if(not(in_state(GameScreen::SplashFirst)))
                 .after(setup_boomerang_mesh),
         )
         .add_systems(
@@ -55,7 +55,7 @@ pub fn player_shoot_plugin(app: &mut App) {
                 boomerang_destroy_on_contact,
                 boomerang_destroy_close_to_player,
             )
-                .run_if(in_state(GameScreen::Gameplay)),
+                .run_if(not(in_state(GameScreen::SplashFirst))),
         );
 }
 

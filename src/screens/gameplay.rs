@@ -16,7 +16,6 @@ pub fn gameplay_plugin(app: &mut App) {
     app.init_resource::<CurrentWave>()
         .init_resource::<CurrentWaveTime>()
         .add_event::<SpawnWaveEvent>()
-        .add_plugins(characters_plugin().screen(GameScreen::Gameplay).call())
         .add_systems(OnEnter(GameScreen::Gameplay), (spawn_player, reset_wave))
         .add_systems(
             OnExit(GameScreen::Gameplay),

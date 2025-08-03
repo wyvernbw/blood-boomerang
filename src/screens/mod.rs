@@ -4,12 +4,14 @@ use bevy_asset_loader::prelude::*;
 use crate::audio::prelude::*;
 use crate::screens::after_death::prelude::*;
 use crate::screens::splash::prelude::*;
+use crate::screens::tutorial::tutorial_plugin;
 use crate::screens::{camera_setup::camera_setup_plugin, gameplay::gameplay_plugin};
 
 mod after_death;
 mod camera_setup;
 mod gameplay;
 mod splash;
+mod tutorial;
 
 pub mod prelude {
     pub use super::GameScreen;
@@ -27,6 +29,7 @@ pub fn screens_plugin(app: &mut App) {
         .add_plugins(camera_setup_plugin)
         .add_plugins(gameplay_plugin)
         .add_plugins(splash_screen_plugin)
+        .add_plugins(tutorial_plugin)
         .add_plugins(after_death_plugin);
 
     #[cfg(all(debug_assertions, not(target_arch = "wasm32")))]
@@ -41,6 +44,7 @@ pub enum GameScreen {
     #[default]
     SplashFirst,
     SplashNext,
+    Tutorial,
     Gameplay,
     AfterDeath,
 }

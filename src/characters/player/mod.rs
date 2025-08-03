@@ -68,7 +68,7 @@ pub fn player_plugin(app: &mut App) {
                 player_dash_ability,
                 player_disable_dash_after_timer,
             )
-                .run_if(in_state(GameScreen::Gameplay)),
+                .run_if(not(in_state(GameScreen::SplashFirst))),
         )
         .configure_loading_state(
             LoadingStateConfig::new(GameScreen::SplashFirst).load_collection::<PlayerAssets>(),
@@ -296,14 +296,14 @@ fn player_aim(
 }
 
 fn player_mouse_aim(
-    camera_query: Query<(&GlobalTransform, &Camera), With<OuterCamera>>,
-    player_query: Query<&Transform, With<Player>>,
-    window_query: Query<&Window, With<PrimaryWindow>>,
+    camera_query: Single<(&GlobalTransform, &Camera), With<OuterCamera>>,
+    player_query: Single<&Transform, With<Player>>,
+    window_query: Single<&Window, With<PrimaryWindow>>,
     mut action_state: ResMut<ActionState<PlayerAction>>,
 ) {
-    let (camera_transform, camera) = camera_query.single().expect("Need a single camera");
-    let player_transform = player_query.single().expect("Need a single player");
-    let window = window_query.single().expect("Need a single primary window");
+    let (camera_transform, camera) = camera_query.into_inner();
+    let player_transform = player_query.into_inner();
+    let window = window_query.into_inner();
 
     // Many steps can fail here, so we'll wrap in an option pipeline
     // First check if the cursor is in window

@@ -75,6 +75,7 @@ bon = "3.6.5"
 bevy_enoki = "0.4.0"
 bevy_trauma_shake = { git = "https://github.com/piedoom/bevy_trauma_shake.git" }
 bevy_lunex = { version = "0.4.2", features = ["wasm"] }
+moonshine-save = "0.5.2"
 
 [features]
 # Default to a native dev build.

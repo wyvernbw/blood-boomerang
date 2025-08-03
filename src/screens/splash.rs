@@ -12,17 +12,15 @@ pub mod prelude {
 
 pub fn splash_screen_plugin(app: &mut App) {
     app.add_systems(OnEnter(GameScreen::SplashFirst), spawn_splash_screen)
-        .add_systems(
-            OnExit(GameScreen::SplashFirst),
-            (continue_to_splash_next, play_bg_music),
-        )
+        .add_systems(OnExit(GameScreen::SplashFirst), (continue_to_splash_next))
         .add_systems(
             Update,
             splash_next_system.run_if(in_state(GameScreen::SplashNext)),
         )
         .add_systems(OnExit(GameScreen::SplashNext), despawn_splash_screen)
         .add_systems(OnEnter(GameScreen::SplashNext), play_menu_sound)
-        .add_systems(OnExit(GameScreen::SplashNext), play_menu_sound);
+        .add_systems(OnExit(GameScreen::SplashNext), play_menu_sound)
+        .add_systems(OnEnter(GameScreen::Gameplay), play_bg_music);
 }
 
 #[derive(Component, Default, Debug)]
@@ -52,7 +50,7 @@ fn splash_next_system(
 ) {
     *elapsed += time.delta();
     if elapsed.as_secs_f32() > 1.0 {
-        next_screen.set(GameScreen::Gameplay);
+        next_screen.set(GameScreen::Tutorial);
     }
 }
 
@@ -66,7 +64,19 @@ pub fn play_menu_sound(audio: Res<Audio>, volume: Res<VolumeSettings>, assets: R
         .with_volume(volume.calc_sfx(1.0));
 }
 
-fn play_bg_music(audio: Res<Audio>, assets: Res<MenuAssets>) {
+#[derive(Component)]
+pub struct BgMusic;
+
+pub fn play_bg_music(
+    audio: Res<Audio>,
+    assets: Res<MenuAssets>,
+    music: Option<Single<&BgMusic>>,
+    mut commands: Commands,
+) {
+    if music.is_some() {
+        return;
+    }
+    commands.spawn(BgMusic);
     audio
         .play(assets.background_music.clone())
         .looped()
